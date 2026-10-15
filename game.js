@@ -6,10 +6,9 @@
   // ---------------- Data ----------------
   // Game logic runs in "px" units on a 2D map (x = along the world, y = depth). U converts px -> 3D studs.
   const U = 0.05;
-  const WORLD_H = 1400, GARDEN_W = 840, ZONE_W = 1800;
-  const GY = (WORLD_H - 720) / 2; // garden layout offset so the base sits in the middle of the wider map
-  const SPAWN = { x: 715, y: WORLD_H / 2 };
-  const TREADMILL = { x: 640, y: 480 + GY, w: 150, h: 120 };
+  const WORLD_H = 1400, GARDEN_W = 1700, ZONE_W = 1800;
+  const SPAWN = { x: 1450, y: WORLD_H / 2 };
+  const TREADMILL = { x: 1230, y: 880, w: 200, h: 150 };
   const MAX_SLOTS = 12, START_SLOTS = 6;
 
   const RARITIES = [
@@ -314,14 +313,14 @@
 
   // ---------------- Zone layouts (px) ----------------
   const THEMES = {
-    forest: { stone: 0x6a6f66, moss: 0x3f6a34, patch: 0x3b2a1a, slow: 'Swamp mud', torch: 0xff8a2a },
-    lake: { stone: 0x7d8b92, moss: 0x4a8a5a, patch: 0x1d5f9e, slow: 'Deep water', torch: 0x33ccff },
-    desert: { stone: 0xc9a66b, moss: 0xa8834a, patch: 0xe8c47a, slow: 'Quicksand', torch: 0xffb52e },
-    jungle: { stone: 0x5f6f58, moss: 0x2f7a34, patch: 0x3d4a1c, slow: 'Swamp', torch: 0x7dff4a },
-    snow: { stone: 0x9fd2ee, moss: 0xffffff, patch: 0xf4f9ff, slow: 'Deep snow', torch: 0x9ee6ff },
-    volcano: { stone: 0x2a2226, moss: 0x4a2a20, patch: 0xff4a00, slow: 'Lava', torch: 0xff5a00 },
-    abyss: { stone: 0x3a4a6a, moss: 0xff5c9a, patch: 0x08182a, slow: 'Kelp tangle', torch: 0x33ffcc },
-    cosmic: { stone: 0x4a3a7a, moss: 0x33ffff, patch: 0x2a0a4a, slow: 'Gravity well', torch: 0xb46cff },
+    forest: { stone: 0x6a6f66, moss: 0x3f6a34, torch: 0xff8a2a },
+    lake: { stone: 0x7d8b92, moss: 0x4a8a5a, torch: 0x33ccff },
+    desert: { stone: 0xc9a66b, moss: 0xa8834a, torch: 0xffb52e },
+    jungle: { stone: 0x5f6f58, moss: 0x2f7a34, torch: 0x7dff4a },
+    snow: { stone: 0x9fd2ee, moss: 0xffffff, torch: 0x9ee6ff },
+    volcano: { stone: 0x2a2226, moss: 0x4a2a20, torch: 0xff5a00 },
+    abyss: { stone: 0x3a4a6a, moss: 0xff5c9a, torch: 0x33ffcc },
+    cosmic: { stone: 0x4a3a7a, moss: 0x33ffff, torch: 0xb46cff },
   };
   // Circle colliders (px), bucketed along x so lookups stay cheap.
   const colliders = new Map(), CB = 400;
@@ -336,8 +335,7 @@
       o.x = c.x + (dx / d) * m; o.y = c.y + (dy / d) * m;
     });
   }
-  const patches = [], pads = [];
-  const patchAt = (x, y) => patches.find((p) => ((x - p.x) / p.rx) ** 2 + ((y - p.y) / p.ry) ** 2 < 1);
+  const pads = [];
   const LAIR_R = 210, G_R = 36;
   const segDist = (x, y, a, b) => {
     const sx = b.x - a.x, sy = b.y - a.y, t = Math.max(0, Math.min(1, ((x - a.x) * sx + (y - a.y) * sy) / (sx * sx + sy * sy || 1)));
@@ -357,21 +355,13 @@
     const home = P(1420, 700);
     const way = [home, P(1250, 250), P(860, 250), P(wA, 700), P(330, 470), P(200, 700), P(380, 940), P(wA, 700), P(860, 1150), P(1250, 1150)];
     const padsZ = [P(170, 560), P(170, 840), P(wA + 140, 760), P(wB + 150, 1180)].map((q) => ({ ...q, zone: z }));
-    const patchesZ = [];
-    for (let i = 0; i < 250 && patchesZ.length < 5; i++) {
-      const q = { x: x0 + 150 + rnd() * 1200, y: 120 + rnd() * (WORLD_H - 240), rx: 100 + rnd() * 110, ry: 70 + rnd() * 70, name: THEMES[Z.deco].slow, zone: z };
-      const near = (o, m) => Math.hypot(o.x - q.x, o.y - q.y) < q.rx + m;
-      if (peds.some((o) => near(o, 90)) || near(lair, LAIR_R + 40) || padsZ.some((o) => near(o, 60)) || patchesZ.some((o) => near(o, o.rx))) continue;
-      if (walls.some((w) => Math.abs(w.x - q.x) < q.rx + 40 && q.y > w.y0 - q.ry && q.y < w.y1 + q.ry)) continue;
-      patchesZ.push(q);
-    }
-    patches.push(...patchesZ); pads.push(...padsZ);
+    pads.push(...padsZ);
     // Is a spot clear for scenery (keeps paths, eggs and the lair open)?
     const free = (x, y, m) => !peds.some((o) => Math.hypot(o.x - x, o.y - y) < 110 + m) && Math.hypot(lair.x - x, lair.y - y) > LAIR_R + 60 + m &&
       !walls.some((w) => Math.abs(w.x - x) < 50 + m && y > w.y0 - 50 - m && y < w.y1 + 50 + m) && !padsZ.some((o) => Math.hypot(o.x - x, o.y - y) < 70 + m) &&
-      !patchesZ.some((o) => Math.hypot(o.x - x, o.y - y) < o.rx + m) && !path.some((a, i) => i && segDist(x, y, path[i - 1], a) < 70 + m) &&
+      !path.some((a, i) => i && segDist(x, y, path[i - 1], a) < 70 + m) &&
       !way.some((a, i) => i && segDist(x, y, way[i - 1], a) < 45 + m);
-    return { rnd, x0, peds, walls, path, lair, home, way, pads: padsZ, patches: patchesZ, free };
+    return { rnd, x0, peds, walls, path, lair, home, way, pads: padsZ, free };
   });
 
   // Void floor beneath everything
@@ -381,7 +371,7 @@
     const g = new THREE.Group(); scene.add(g);
     const W = GARDEN_W * U;
     part(g, W, 1, DEPTH, studMat(0x6fae4a, W / 2, DEPTH / 2), W / 2, -0.5, DEPTH / 2, { shadow: false });
-    part(g, (GARDEN_W - 600) * U, 0.1, 90 * U, studMat(0xb59a6a, 6, 2), (600 + (GARDEN_W - 600) / 2) * U, 0.05, SPAWN.y * U, { shadow: false });
+    part(g, (GARDEN_W - 1300) * U, 0.1, 90 * U, studMat(0xb59a6a, 6, 2), (1300 + (GARDEN_W - 1300) / 2) * U, 0.05, SPAWN.y * U, { shadow: false });
     const wall = mat(0x5a6470);
     part(g, W, 3, 1, wall, W / 2, 1.5, -0.5);
     part(g, W, 1.5, 1, wall, W / 2, 0.75, DEPTH + 0.5);
@@ -396,9 +386,9 @@
     part(g, 0.3, 0.3, (WORLD_H - gap1) * U, mat(0x6b4a2f), (GARDEN_W - 8) * U, 1.6, (WORLD_H + gap1) / 2 * U);
     // trees around the edges of the base
     const grnd = seeded(4242);
-    for (let i = 0; i < 40; i++) {
+    for (let i = 0; i < 70; i++) {
       const x = 40 + grnd() * (GARDEN_W - 90), y = 40 + grnd() * (WORLD_H - 80);
-      if (y > 300 && y < WORLD_H - 300) continue;
+      if (y > 230 && y < WORLD_H - 230) continue;
       decorate(g, 'forest', { x: x * U, z: y * U, s: 0.7 + grnd() * 0.5, v: grnd() * 0.75 }, grnd);
     }
     // spawn pad
@@ -406,11 +396,11 @@
     const ring = new THREE.Mesh(new THREE.TorusGeometry(2.1, 0.12, 6, 32), glow(0x2fd36f));
     ring.rotation.x = Math.PI / 2; ring.position.set(SPAWN.x * U, 0.45, SPAWN.y * U); g.add(ring);
     // base sign
-    const sz = (GY + 70) * U;
-    part(g, 0.6, 5, 0.6, mat(0x5a3a22), 3, 2.5, sz); part(g, 0.6, 5, 0.6, mat(0x5a3a22), 15, 2.5, sz);
-    part(g, 13, 2.6, 0.4, mat(0x7a5230), 9, 5.4, sz - 0.1);
+    const sz = 260 * U, sx = 615 * U;
+    part(g, 0.6, 5, 0.6, mat(0x5a3a22), sx - 6, 2.5, sz); part(g, 0.6, 5, 0.6, mat(0x5a3a22), sx + 6, 2.5, sz);
+    part(g, 13, 2.6, 0.4, mat(0x7a5230), sx, 5.4, sz - 0.1);
     const sign = makeLabel('YOUR BASE', { size: 64, color: '#ffd23f', h: 2.0 });
-    sign.position.set(9, 5.4, sz + 0.3); g.add(sign);
+    sign.position.set(sx, 5.4, sz + 0.3); g.add(sign);
     // treadmill
     const T = TREADMILL, tx = (T.x + T.w / 2) * U, tz = (T.y + T.h / 2) * U;
     part(g, T.w * U + 1, 0.6, T.h * U + 1, mat(0x3a3f48), tx, 0.3, tz);
@@ -432,7 +422,9 @@
     return g;
   }
 
-  function slotPos(i) { return { x: 60 + (i % 4) * 140, y: 130 + GY + Math.floor(i / 4) * 175, w: 115, h: 130 }; }
+  function slotPos(i) { return { x: 100 + (i % 4) * 270, y: 320 + Math.floor(i / 4) * 270, w: 220, h: 220 }; }
+  // Creatures grow with what they earn (income spans 1 to ~200,000/s, so scale on a gentle power curve).
+  const petSize = (z, r) => 2.6 * income(z, r) ** 0.13;
   const slotViews = [];
   function buildSlots(parent) {
     for (let i = 0; i < MAX_SLOTS; i++) {
@@ -481,25 +473,6 @@
       }
     }
 
-    // Slow terrain (mud, water, quicksand, lava…)
-    for (const q of L.patches) {
-      const hot = Z.deco === 'volcano', wet = Z.deco === 'lake';
-      const m = hot ? new THREE.MeshBasicMaterial({ color: T.patch }) : new THREE.MeshLambertMaterial({ color: T.patch, transparent: wet, opacity: wet ? 0.85 : 1 });
-      const disc = new THREE.Mesh(new THREE.CircleGeometry(1, 30), m);
-      disc.rotation.x = -Math.PI / 2; disc.scale.set(q.rx * U, q.ry * U, 1); disc.position.set(q.x * U, 0.06, q.y * U); disc.receiveShadow = !hot; g.add(disc);
-      const rim = new THREE.Mesh(new THREE.RingGeometry(0.94, 1.04, 30), new THREE.MeshBasicMaterial({ color: new THREE.Color(T.patch).multiplyScalar(hot ? 0.5 : 0.7), side: THREE.DoubleSide }));
-      rim.rotation.x = -Math.PI / 2; rim.scale.copy(disc.scale); rim.position.set(q.x * U, 0.07, q.y * U); g.add(rim);
-      const ph = rnd() * 6;
-      if (hot) animProps.push((t) => m.color.setHSL(0.045 + Math.sin(t * 2 + ph) * 0.015, 1, 0.5));
-      else if (wet || Z.deco === 'cosmic') animProps.push((t) => { disc.position.y = 0.06 + Math.sin(t + ph) * 0.02; rim.rotation.z = t * (wet ? 0.1 : 0.6); });
-      // a few bubbles / reeds so it reads as hazardous
-      for (let i = 0; i < 4; i++) {
-        const a = rnd() * 6.28, r = rnd() * 0.7, bx = (q.x + Math.cos(a) * q.rx * r) * U, bz = (q.y + Math.sin(a) * q.ry * r) * U;
-        if (Z.deco === 'abyss' || Z.deco === 'jungle' || Z.deco === 'lake') for (let k = 0; k < 3; k++) part(g, 0.18, 1.5 + k * 0.5, 0.18, mat(Z.deco === 'abyss' ? 0x2a7a4a : 0x4a7a3a), bx + k * 0.25, 0.75 + k * 0.25, bz, { rz: (k - 1) * 0.2 });
-        else { const b = mesh(g, new THREE.SphereGeometry(0.25, 6, 4), hot ? glow(0xffd23f) : mat(new THREE.Color(T.patch).multiplyScalar(1.2).getHex()), bx, 0.1, bz); animProps.push((t) => (b.position.y = 0.05 + Math.abs(Math.sin(t * 1.5 + a * 3)) * 0.3)); }
-      }
-    }
-
     // Boost pads (green chevrons) for quick getaways
     for (const q of L.pads) {
       const grp = new THREE.Group(); grp.position.set(q.x * U, 0, q.y * U); g.add(grp);
@@ -528,7 +501,7 @@
     for (let i = 0, n = 0; i < 160 && n < 48; i++) {
       const x = L.x0 + 40 + rnd() * (ZONE_W - 80), y = 40 + rnd() * (WORLD_H - 80), sc = 0.7 + rnd() * 0.6, v = rnd();
       if (!L.free(x, y, 30 * sc)) continue;
-      // flat water/lava pools are real hazards now (patches), so scenery skips them
+      // no flat water/lava pools: they'd look like hazards
       const vv = Z.deco === 'lake' ? 0.45 + v * 0.55 : Z.deco === 'volcano' ? 0.35 + v * 0.65 : v;
       decorate(g, Z.deco, { x: x * U, z: y * U, s: sc, v: vv }, rnd); n++;
     }
@@ -846,7 +819,7 @@
 
   let shake = 0, paused = true, started = false, muted = false;
   let activePed = null, currentQ = null, usedHint = false, quizId = 0;
-  let msgCooldown = 0, slowMsg = 0, stepT = 0, beatT = 0, lastTick = -1;
+  let msgCooldown = 0, stepT = 0, beatT = 0, lastTick = -1;
 
   // ---------------- Audio ----------------
   let actx = null;
@@ -897,8 +870,7 @@
     // Roblox-style classic sounds, synthesized: springy jump, soft land, footsteps, "oof", coin chimes…
     jump: () => { tone(260, 0.18, 'square', 0.05, 340); tone(390, 0.22, 'sine', 0.09, 420, 0.02); noise(0.12, 0.05, 2500, 0.8, 'highpass'); },
     land: () => { noise(0.09, 0.14, 300, 1, 'lowpass'); tone(90, 0.08, 'sine', 0.08, -30); },
-    step: (kind) => kind === 'mud' ? noise(0.12, 0.08, 400, 4, 'bandpass', 0, 200)
-      : kind === 'snow' ? noise(0.08, 0.09, 3500, 1.5, 'bandpass')
+    step: (kind) => kind === 'snow' ? noise(0.08, 0.09, 3500, 1.5, 'bandpass')
       : kind === 'sand' ? noise(0.07, 0.07, 2200, 1, 'bandpass')
       : noise(0.05, 0.08, 900 + Math.random() * 300, 1.2, 'bandpass'),
     oof: () => voice(300, 160, 0.32, 0.5, [[650, 6], [1100, 8]]),
@@ -1382,7 +1354,7 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
       } else {
         perSec += income(s.zone, s.rarity);
         const v = slotViews[i]; v.coinT -= dt;
-        if (v.coinT <= 0) { v.coinT = 3 + Math.random() * 2; const sp = slotPos(i); if (player.x < GARDEN_W + 200) sfx.coin(); floater(sp.x + 57, sp.y + 65, '+$' + fmt(income(s.zone, s.rarity) * 3), '#7dff7d', 0.8, 4); }
+        if (v.coinT <= 0) { v.coinT = 3 + Math.random() * 2; const sp = slotPos(i); if (player.x < GARDEN_W + 200) sfx.coin(); floater(sp.x + sp.w / 2, sp.y + sp.h / 2, '+$' + fmt(income(s.zone, s.rarity) * 3), '#7dff7d', 0.8, petSize(s.zone, s.rarity) + 1); }
       }
     }
     S.money += perSec * dt;
@@ -1424,10 +1396,8 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
         if (player.z <= 0) { player.z = 0; player.vz = 0; sfx.land(); }
       }
       const air = player.z > 0.6;
-      const slow = air ? null : patchAt(player.x, player.y);
-      if (slow && player.moving && slowMsg <= 0) { floater(player.x, player.y, slow.name.toUpperCase() + '! (slow)', '#ffd23f', 0.8, 6); slowMsg = 3; }
       if (len) {
-        const sp = moveSpeed(S.speed) * dt * (player.boost > 0 ? 1.7 : 1) * (slow ? 0.5 : 1);
+        const sp = moveSpeed(S.speed) * dt * (player.boost > 0 ? 1.7 : 1);
         player.x += (dx / len) * sp; player.y += (dy / len) * sp;
         player.face = Math.atan2(dx, dy);
         // Camera drifts back behind the character while walking forward-ish.
@@ -1437,11 +1407,11 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
       pushOut(player, player.r, player.z > 2.2);
       // footsteps (sound depends on the ground)
       if (player.moving && !air) {
-        stepT -= dt * (moveSpeed(S.speed) / 190) * (player.boost > 0 ? 1.7 : 1) * (slow ? 0.5 : 1);
+        stepT -= dt * (moveSpeed(S.speed) / 190) * (player.boost > 0 ? 1.7 : 1);
         if (stepT <= 0) {
           stepT = 0.3;
           const zd = ZONES[zoneAt(player.x)];
-          sfx.step(slow ? 'mud' : zd && zd.deco === 'snow' ? 'snow' : zd && zd.deco === 'desert' ? 'sand' : 'grass');
+          sfx.step(zd && zd.deco === 'snow' ? 'snow' : zd && zd.deco === 'desert' ? 'sand' : 'grass');
         }
       }
       player.y = Math.max(25, Math.min(WORLD_H - 25, player.y));
@@ -1461,7 +1431,7 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
       }
       if (player.carrying && player.x < GARDEN_W - 10) placeEgg();
     }
-    msgCooldown -= dt; slowMsg -= dt;
+    msgCooldown -= dt;
     // tense heartbeat while a guardian is chasing you
     const chaser = player.carrying && guardians[player.carrying.zone];
     if (chaser && chaser.mode === 'chase' && chaser.daze <= 0) {
@@ -1732,7 +1702,7 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
           if (s.hatch > 0) { v.obj = eggMesh(s.rarity, 1.2); v.obj.position.set(v.cx, 2, v.cz); }
           else {
             const m = Models.build(ZONES[s.zone].pets[s.rarity].spec);
-            m.scale.setScalar(3.4 / m.userData.height);
+            m.scale.setScalar(petSize(s.zone, s.rarity) / m.userData.height);
             const holder = new THREE.Group(); holder.add(m); holder.position.set(v.cx, 0.65, v.cz); holder.userData.model = m;
             v.obj = holder;
           }
@@ -1749,7 +1719,7 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
       else if (!s) setLabel(v.label, 'Empty plot');
       else if (s.hatch > 0) setLabel(v.label, `${R.name} egg\nHatching ${Math.ceil(s.hatch)}s`);
       else setLabel(v.label, `${ZONES[s.zone].pets[s.rarity].n}\n$${fmt(income(s.zone, s.rarity))}/s`);
-      v.label.position.y = s && s.hatch === 0 ? 5.6 : 4.4;
+      v.label.position.y = s && s.hatch === 0 ? petSize(s.zone, s.rarity) + 2.2 : 4.4;
       v.rim.material = R ? glow(R.hex) : mat(0x30343c);
     }
 
@@ -1813,7 +1783,7 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
   }
 
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
-  if (location.hash === '#debug') window.dbg = { player, guardians, pedestals, dropped, isNight, spawnDivine, LAYOUTS, patches, pads, navAt, navTarget, clearLine, get S() { return S; } };
+  if (location.hash === '#debug') window.dbg = { setYaw: (a, p) => { camYaw = a; if (p !== undefined) camPitch = p; lastOrbit = performance.now() / 1000 + 30; }, player, guardians, pedestals, dropped, isNight, spawnDivine, LAYOUTS, pads, navAt, navTarget, clearLine, get S() { return S; } };
   buildNav();
   buildMenu();
   requestAnimationFrame(frame);

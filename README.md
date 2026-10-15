@@ -7,11 +7,13 @@ A single-player 3D browser remake of Roblox's *Steal an Egg*, where every egg is
 ## Look
 Roblox-style 3D: studded baseplates, a blocky avatar, plastic-looking parts, floating name tags, a Roblox-style third-person camera behind the character (WASD moves relative to the camera, Space (or the touch JUMP button) jumps, ←/→ or drag to turn, scroll to zoom, touch thumbstick on phones), and props or guardians that fade when they block the view.
 
+## Your base
+A big safe zone that guardians can't enter. It has 12 large plots, the treadmill and the spawn pad, with the path out to the Haunted Forest. Creatures grow with what they earn, from a small Common Goblin (~2.6 studs) to towering Divines from the Void Cosmos (~13 studs). Height = 2.6 × income^0.13.
+
 ## Zones
 Each zone is a big arena (about 90 × 70 studs):
 - **A winding path** leads from the gate to the guardian's **lair**, a ring of torch-lit pillars. The **lair egg** inside always rolls rarer (and its question is harder). Eggs deeper in a zone are rarer in general.
 - **Broken walls** split the zone into sections. Rubble gaps are too small for the guardian but you can squeeze through, and the same goes for the gaps between lair pillars.
-- **Slow terrain** (mud, deep water, quicksand, swamp, deep snow, lava, kelp, gravity wells) halves your speed. Guardians are not slowed.
 - **Green boost pads** give a short burst of speed (×1.7), handy for getaways.
 - Themed landmarks: a giant dead tree, a ruined statue, a pyramid, a step temple, ice crystals, an erupting volcano, a shipwreck and a floating monolith.
 
@@ -32,9 +34,9 @@ The original runs a 5-minute cycle that ends in a short night "reset": eggs rest
 - **At sunrise** a Divine egg still on its pedestal fades away. One you're carrying, or one dropped outside its zone, is safe.
 
 ## Jumping & sound
-- **Jumping:** a Roblox-style jump about 4 studs high. In mid-air you clear small scenery (rocks, bushes, trees) and skip over mud and other slow ground. Walls and lair pillars are still too tall to jump.
+- **Jumping:** a Roblox-style jump about 4 studs high. In mid-air you clear small scenery (rocks, bushes, trees). Walls and lair pillars are still too tall to jump.
 - **Sound effects:** all made with Web Audio, no sound files. They imitate the original's Roblox feel:
-  - moving: a springy jump, a landing thud, footsteps that change with the ground (grass, sand, snow crunch, mud squelch), and a whoosh on boost pads;
+  - moving: a springy jump, a landing thud, footsteps that change with the ground (grass, sand, snow crunch), and a whoosh on boost pads;
   - getting hit: a Roblox-style **"oof"** when smacked or caught;
   - rewards: a cash "ka-ching" for right answers, coin chimes from your creatures, an egg-grab pop, and a crack when an egg hatches;
   - tension: a heartbeat during chases that speeds up as the monster gets closer, and ticks counting down the last 5 seconds before night or sunrise.
