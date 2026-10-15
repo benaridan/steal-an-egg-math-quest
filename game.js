@@ -163,8 +163,41 @@
   let hasSave = false;
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    if (raw) { S = Object.assign(fresh(), JSON.parse(raw)); hasSave = S.level !== null; }
-  } catch (e) { /* storage unavailable */ }
+    if (raw) { S = loadSave(JSON.parse(raw)); hasSave = S.level !== null; }
+  } catch (e) { /* storage unavailable or corrupt save */ }
+  // Rebuild the save field by field with type and range checks, so a corrupted or hand-edited
+  // save can't inject markup into the UI, pollute prototypes or crash the game.
+  function loadSave(d) {
+    const out = fresh();
+    if (!d || typeof d !== 'object') return out;
+    const num = (v, lo, hi, def) => (typeof v === 'number' && isFinite(v) ? Math.min(hi, Math.max(lo, v)) : def);
+    const int = (v, lo, hi, def) => Math.round(num(v, lo, hi, def));
+    out.level = Number.isInteger(d.level) && d.level >= 0 && d.level < MathGen.LEVELS.length ? d.level : null;
+    out.money = num(d.money, 0, 1e300, 0);
+    out.speed = num(d.speed, 0, 1e300, 0);
+    out.treadLvl = int(d.treadLvl, 1, 100, 1);
+    out.slotsUnlocked = int(d.slotsUnlocked, START_SLOTS, MAX_SLOTS, START_SLOTS);
+    out.streak = int(d.streak, 0, 1e9, 0);
+    out.clock = num(d.clock, 0, CYCLE - 0.001, 0);
+    out.nights = int(d.nights, 0, 1e9, 0);
+    const st = d.stats && typeof d.stats === 'object' ? d.stats : {};
+    out.stats = { correct: int(st.correct, 0, 1e9, 0), wrong: int(st.wrong, 0, 1e9, 0), best: int(st.best, 0, 1e9, 0) };
+    if (d.discovered && typeof d.discovered === 'object') {
+      for (const k of Object.keys(d.discovered)) {
+        const m = /^(\d+):(\d+)$/.exec(k);
+        if (m && +m[1] < ZONES.length && +m[2] < RARITIES.length && d.discovered[k] === true) out.discovered[k] = true;
+      }
+    }
+    if (Array.isArray(d.slots)) {
+      for (let i = 0; i < MAX_SLOTS; i++) {
+        const s = d.slots[i];
+        if (s && Number.isInteger(s.zone) && s.zone >= 0 && s.zone < ZONES.length && Number.isInteger(s.rarity) && s.rarity >= 0 && s.rarity < RARITIES.length) {
+          out.slots[i] = { zone: s.zone, rarity: s.rarity, hatch: num(s.hatch, 0, 3600, 0) };
+        }
+      }
+    }
+    return out;
+  }
   function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) { /* ignore */ } }
 
   // ---------------- Three.js scene ----------------
