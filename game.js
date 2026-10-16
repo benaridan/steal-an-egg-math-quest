@@ -9,6 +9,7 @@
   const WORLD_H = 1400, GARDEN_W = 1700, ZONE_W = 1800;
   const SPAWN = { x: 1450, y: WORLD_H / 2 };
   const TREADMILL = { x: 1230, y: 880, w: 200, h: 150 };
+  const TRAIL_SHOP = { x: 1330, y: 450, r: 95 };
   const MAX_SLOTS = 12, START_SLOTS = 6;
 
   const RARITIES = [
@@ -109,7 +110,7 @@
   [
     { n: 'Celestial Stag', spec: { type: 'quad', body: 0xfff8e6, belly: 0xffffff, mane: 0xffd700, horns: 'antler', hornColor: 0xffd700, eye: 0x33ffff } },
     { n: 'Seraph Swan', spec: { type: 'bird', body: 0xffffff, wings: 0xffe680, wingGlow: true, crest: 0xffd700, eye: 0x33ccff } },
-    { n: 'Sun Sphinx', spec: { type: 'quad', body: 0xf0c24a, mane: 0xfff1a8, wings: 0xffffff, wingGlow: true, eye: 0x33ffff, claws: true } },
+    { n: 'Sun Sphinx', spec: { type: 'sunsphinx', body: 0xf6c443, arms: 0xf0a818, hair: 0xf8d887, membrane: 0xfffdf4, eye: 0x5ee8ff } },
     { n: 'Jade Dragon King', spec: { type: 'dragon', body: 0x3cffb0, belly: 0xfff1a8, wings: 0xffd700, wingGlow: true, spikes: 0xffd700, horns: 'antler', hornColor: 0xffd700, eye: 0xffffff } },
     { n: 'Aurora Wolf', spec: { type: 'quad', body: 0xe8f6ff, belly: 0xffffff, mane: 0x7dffea, ears: true, tail: 'long', eye: 0xff66ff } },
     { n: 'Sovereign Phoenix', spec: { type: 'bird', body: 0xffd23f, wings: 0xff5a00, wingGlow: true, crest: 0xffffff, eye: 0xffffff } },
@@ -122,9 +123,27 @@
 
   const income = (z, r) => ZONES[z].base * RARITIES[r].mult;
   const difficulty = (z, r) => (r === DIVINE ? 10 : Math.min(10, 1 + Math.round(((z + r) * 9) / 12)));
-  const moveSpeed = (s) => 170 + 55 * Math.log10(1 + s);
-  // Guardians run a little faster than the speed their zone requires (more in deeper zones).
-  const guardSpeed = (z) => moveSpeed(ZONES[z].req) * (1 + 0.015 * z);
+  // Speed points -> run speed (px/s). Steeper than before so training is something you can feel.
+  const moveSpeed = (s) => 160 + 75 * Math.log10(1 + s);
+  // Trails (from the original): bought at the TRAILS SHOP circle in your base, each one multiplies your
+  // run speed and only the equipped one counts. The original goes up to x14; it's compressed here so
+  // guardians stay a threat, and deeper guardians are tuned assuming you've bought a trail or two.
+  const TRAILS = [
+    { n: 'Gray Trail', rar: 'Common', col: '#d9d4c7', mult: 1.15, cost: 150, c: [0xf0f0f0, 0x8a8a8a] },
+    { n: 'Green Trail', rar: 'Uncommon', col: '#5fd35f', mult: 1.3, cost: 2500, c: [0x9dffaa, 0x1f9a3a] },
+    { n: 'Blue Trail', rar: 'Rare', col: '#4aa3ff', mult: 1.45, cost: 25000, c: [0x9ad8ff, 0x1a4aff] },
+    { n: 'Purple Trail', rar: 'Epic', col: '#b46cff', mult: 1.6, cost: 200000, c: [0xe6bbff, 0x7a2fe0] },
+    { n: 'Golden Trail', rar: 'Legendary', col: '#ffb52e', mult: 1.75, cost: 1.5e6, c: [0xfff4b0, 0xffa000] },
+    { n: 'Red Trail', rar: 'Mythic', col: '#ff3d7f', mult: 1.9, cost: 1.2e7, c: [0xffa0a0, 0xd00020] },
+    { n: 'Galaxy Trail', rar: 'Legendary', col: '#9a7bff', mult: 2.1, cost: 1e8, c: [0x33ffff, 0x7a3cff, 0xff55ff], sparkle: true },
+    { n: 'Secret Trail', rar: 'Secret', col: '#ff4a6a', mult: 2.35, cost: 8e8, c: [0xffffff, 0xff1a4a, 0x8a0030], sparkle: true },
+    { n: 'Eternal Trail', rar: 'Eternal', col: '#7dffff', mult: 2.6, cost: 4e9, c: [0xffffff, 0x66ffff, 0x3a6aff], sparkle: true },
+    { n: 'Divine Trail', rar: 'Divine', col: '#fff2a8', mult: 2.9, cost: 2e10, c: [0xffffff, 0xfff0a0, 0xffa000], sparkle: true },
+  ];
+  const trailMult = () => (S.trail >= 0 ? TRAILS[S.trail].mult : 1);
+  const runSpeed = () => moveSpeed(S.speed) * trailMult();
+  // Guardians run a little faster than the speed their zone requires, more so in deeper zones.
+  const guardSpeed = (z) => moveSpeed(ZONES[z].req) * (1 + 0.015 * z) * (1 + 0.08 * z);
   const treadGain = (lvl) => Math.round(1.75 ** (lvl - 1) * 10) / 10;
   const treadCost = (lvl) => Math.round(25 * 2.4 ** (lvl - 1));
   const slotCost = (n) => Math.round(80 * 3 ** (n - START_SLOTS));
@@ -155,7 +174,7 @@
   const fresh = () => ({
     clock: 0, nights: 0,
     level: null, money: 0, speed: 0, treadLvl: 1, slotsUnlocked: START_SLOTS,
-    slots: Array(MAX_SLOTS).fill(null), discovered: {}, streak: 0,
+    slots: Array(MAX_SLOTS).fill(null), discovered: {}, streak: 0, trails: [], trail: -1,
     stats: { correct: 0, wrong: 0, best: 0 },
   });
   let S = fresh();
@@ -179,6 +198,8 @@
     out.streak = int(d.streak, 0, 1e9, 0);
     out.clock = num(d.clock, 0, CYCLE - 0.001, 0);
     out.nights = int(d.nights, 0, 1e9, 0);
+    if (Array.isArray(d.trails)) out.trails = [...new Set(d.trails.filter((i) => Number.isInteger(i) && i >= 0 && i < TRAILS.length))].sort((a, b) => a - b);
+    out.trail = Number.isInteger(d.trail) && out.trails.includes(d.trail) ? d.trail : -1;
     const st = d.stats && typeof d.stats === 'object' ? d.stats : {};
     out.stats = { correct: int(st.correct, 0, 1e9, 0), wrong: int(st.wrong, 0, 1e9, 0), best: int(st.best, 0, 1e9, 0) };
     if (d.discovered && typeof d.discovered === 'object') {
@@ -419,6 +440,23 @@
     const tl = makeLabel('TREADMILL', { size: 48, color: '#ffd23f', color2: '#9fd4ff', h: 1.0 });
     tl.position.set(tx, 5.6, tz); g.add(tl);
     animProps.push((t) => { beltTex.offset.y = -t * (onTread ? 3 : 0.3); setLabel(tl, `TREADMILL Lv${S.treadLvl}\n+${treadGain(S.treadLvl)} speed/s`); });
+    // trails shop: a glowing yellow circle you walk into (like the original)
+    const ts = TRAIL_SHOP, sx2 = ts.x * U, sz2 = ts.y * U, sr = ts.r * U;
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(sr, 40), new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.35 }));
+    disc.rotation.x = -Math.PI / 2; disc.position.set(sx2, 0.06, sz2); g.add(disc);
+    const rim = new THREE.Mesh(new THREE.TorusGeometry(sr, 0.18, 8, 48), glow(0xffd23f));
+    rim.rotation.x = Math.PI / 2; rim.position.set(sx2, 0.15, sz2); g.add(rim);
+    const swirl = new THREE.Group(); swirl.position.set(sx2, 0, sz2); g.add(swirl);
+    TRAILS.slice(0, 6).forEach((T2, i) => {
+      const a = (i / 6) * Math.PI * 2, m = new THREE.Mesh(new THREE.TorusGeometry(0.6, 0.08, 6, 20), glow(T2.c[1]));
+      m.position.set(Math.cos(a) * (sr - 1.2), 1.2, Math.sin(a) * (sr - 1.2)); swirl.add(m);
+    });
+    const tsl = makeLabel('TRAILS SHOP', { size: 52, color: '#ffd23f', color2: '#fff2a8', h: 1.1 });
+    tsl.position.set(sx2, 4.2, sz2); g.add(tsl);
+    animProps.push((t) => {
+      disc.material.opacity = 0.3 + Math.sin(t * 2.5) * 0.08; swirl.rotation.y = t * 0.8;
+      swirl.children.forEach((m, i) => { m.position.y = 1.2 + Math.sin(t * 2 + i) * 0.4; m.rotation.y = t * 2 + i; });
+    });
     return g;
   }
 
@@ -750,6 +788,55 @@
     return g;
   }
 
+  // Trail ribbon: a fading band of light behind you while you run, coloured by the equipped trail.
+  const TRAIL_N = 44, TRAIL_LIFE = 0.6;
+  const trail = (() => {
+    const geo = new THREE.BufferGeometry(), pos = new Float32Array(TRAIL_N * 6), col = new Float32Array(TRAIL_N * 6), idx = [];
+    for (let i = 0; i < TRAIL_N - 1; i++) { const a = i * 2; idx.push(a, a + 1, a + 2, a + 1, a + 3, a + 2); }
+    geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('color', new THREE.BufferAttribute(col, 3)); geo.setIndex(idx);
+    const ribbon = new THREE.Mesh(geo, new THREE.MeshBasicMaterial({ vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, side: THREE.DoubleSide }));
+    ribbon.frustumCulled = false; ribbon.renderOrder = 2; scene.add(ribbon);
+    const sg = new THREE.BufferGeometry(), sp = new Float32Array(TRAIL_N * 3), sc = new Float32Array(TRAIL_N * 3);
+    sg.setAttribute('position', new THREE.BufferAttribute(sp, 3)); sg.setAttribute('color', new THREE.BufferAttribute(sc, 3));
+    const sparks = new THREE.Points(sg, new THREE.PointsMaterial({ size: 0.7, map: glowTex, vertexColors: true, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }));
+    sparks.frustumCulled = false; sparks.renderOrder = 2; scene.add(sparks);
+    return { geo, pos, col, ribbon, sg, sp, sc, sparks, pts: [] };
+  })();
+  const trailColor = new THREE.Color(), trailC2 = new THREE.Color();
+  function trailGradient(T2, k, t) {
+    const c = T2.c, f = Math.min(0.999, k) * (c.length - 1), i = Math.floor(f);
+    trailColor.set(c[i]).lerp(trailC2.set(c[i + 1]), f - i);
+    if (T2.n === 'Galaxy Trail') trailColor.offsetHSL(Math.sin(t * 2 + k * 4) * 0.08, 0, 0);
+    return trailColor;
+  }
+  function updateTrail(t) {
+    const T2 = S.trail >= 0 ? TRAILS[S.trail] : null, pts = trail.pts;
+    const running = T2 && started && !player.flying && (player.moving || player.z > 0);
+    if (running) {
+      const gy = player.z * 0.85, last = pts[0];
+      if (!last || Math.hypot(last.x - player.x * U, last.z - player.y * U) > 0.12 || t - last.t > 0.05)
+        pts.unshift({ x: player.x * U, z: player.y * U, y: gy, t, jx: Math.random() - 0.5, jy: Math.random(), jz: Math.random() - 0.5 });
+      else { last.y = gy; last.t = t; }
+    }
+    while (pts.length && (pts.length > TRAIL_N || t - pts[pts.length - 1].t > TRAIL_LIFE)) pts.pop();
+    trail.ribbon.visible = trail.sparks.visible = !!T2 && pts.length > 1;
+    if (!trail.ribbon.visible) return;
+    const { pos, col, sp, sc } = trail, tier = S.trail;
+    const w = 0.75 + tier * 0.06;
+    for (let i = 0; i < TRAIL_N; i++) {
+      const p = pts[Math.min(i, pts.length - 1)], k = Math.min(1, (t - p.t) / TRAIL_LIFE), fade = i < pts.length ? (1 - k) ** 1.4 : 0;
+      const mid = p.y + 2.1, hw = w * (1 - k * 0.65);
+      pos.set([p.x, mid - hw, p.z, p.x, mid + hw, p.z], i * 6);
+      const cc = trailGradient(T2, k, t);
+      col.set([cc.r * fade, cc.g * fade, cc.b * fade, cc.r * fade, cc.g * fade, cc.b * fade], i * 6);
+      const sf = T2.sparkle ? fade * (0.6 + 0.4 * Math.sin(t * 20 + i * 1.7)) : 0;
+      sp.set([p.x + p.jx * (0.6 + k * 1.8), mid + (p.jy - 0.5) * 2.4 + k * 0.8, p.z + p.jz * (0.6 + k * 1.8)], i * 3);
+      sc.set([Math.min(1, cc.r + 0.4) * sf, Math.min(1, cc.g + 0.4) * sf, Math.min(1, cc.b + 0.4) * sf], i * 3);
+    }
+    trail.geo.attributes.position.needsUpdate = trail.geo.attributes.color.needsUpdate = true;
+    trail.sg.attributes.position.needsUpdate = trail.sg.attributes.color.needsUpdate = true;
+  }
+
   ZONES.forEach((Z, z) => {
     const L = LAYOUTS[z];
     L.peds.forEach(({ x, y, tier }) => {
@@ -820,6 +907,8 @@
   let shake = 0, paused = true, started = false, muted = false;
   let activePed = null, currentQ = null, usedHint = false, quizId = 0;
   let msgCooldown = 0, stepT = 0, beatT = 0, lastTick = -1;
+  let treadStart = 0, feltSpeed = 0, wasInShop = false;
+  const studs = (pxs) => (pxs * U).toFixed(1);
 
   // ---------------- Audio ----------------
   let actx = null;
@@ -881,6 +970,8 @@
     whoosh: () => noise(0.35, 0.12, 400, 1.2, 'bandpass', 0, 3000),
     heartbeat: () => { tone(60, 0.12, 'sine', 0.22, -15); tone(55, 0.12, 'sine', 0.16, -15, 0.16); },
     tick: () => tone(1400, 0.04, 'square', 0.04),
+    faster: () => { tone(660, 0.1, 'triangle', 0.07, 300); tone(990, 0.14, 'triangle', 0.06, 400, 0.08); noise(0.25, 0.06, 800, 1, 'bandpass', 0, 4000); },
+    equip: () => { [880, 1175, 1568].forEach((f, i) => tone(f, 0.18, 'sine', 0.07, 0, i * 0.05)); noise(0.4, 0.06, 1500, 1, 'bandpass', 0, 6000); },
     right: () => [523, 659, 784, 1046].forEach((f, i) => tone(f, 0.14, 'triangle', 0.15, 0, i * 0.08)),
     wrong: () => { tone(220, 0.25, 'sawtooth', 0.12, -80); tone(160, 0.35, 'sawtooth', 0.12, -60, 0.18); },
     smack: () => { tone(110, 0.35, 'square', 0.25, -80); tone(900, 0.5, 'sine', 0.1, -800, 0.05); },
@@ -904,7 +995,7 @@
   }
   const isTouch = matchMedia('(pointer: coarse)').matches;
   const stars = (d) => '★'.repeat(Math.ceil(d / 2)) + '☆'.repeat(5 - Math.ceil(d / 2));
-  const petPortrait = (z, r) => Models.portrait(ZONES[z].pets[r].spec, `p${z}:${r}`);
+  const petPortrait = (z, r) => Models.portrait(ZONES[z].pets[r].spec, `p${z}:${r}`, { tier: r, color: RARITIES[r].hex });
   const guardPortrait = (z) => Models.portrait(ZONES[z].guard.spec, `g${z}`);
 
   // ---------------- Menu ----------------
@@ -930,7 +1021,7 @@
   };
   function startGame(level) {
     if (hasSave && S.level !== level) toast(`Math level changed to ${MathGen.LEVELS[level].name}`, 'gold');
-    S.level = level; hasSave = true; started = true;
+    S.level = level; hasSave = true; started = true; feltSpeed = runSpeed();
     pedestals.forEach((p) => (p.q = null));
     $('menu').hidden = true; $('hud').hidden = false; paused = false;
     save();
@@ -960,11 +1051,50 @@
       }
       row.appendChild(b); box.appendChild(row);
     });
+    const tr = document.createElement('div'); tr.className = 'shop-item';
+    tr.innerHTML = `<div class="ic">✨</div><div class="tx"><b>Trails</b><small>Run up to ×2.9 faster. Also sold at the glowing TRAILS SHOP circle in your base.</small></div>`;
+    const tb = document.createElement('button'); tb.className = 'primary'; tb.textContent = 'OPEN';
+    tb.onclick = () => { $('shop').hidden = true; openTrails(); };
+    tr.appendChild(tb); box.appendChild(tr);
     const tip = document.createElement('p'); tip.className = 'sub';
     tip.textContent = 'Correct answers also give cash and speed. Answer streaks give bonus cash!';
     box.appendChild(tip);
   }
   $('bShop').onclick = () => { paused = true; renderShop(); $('shop').hidden = false; };
+
+  // ---------------- Trails shop ----------------
+  const hexCss = (h) => '#' + h.toString(16).padStart(6, '0');
+  function renderTrails() {
+    const box = $('trailItems'); box.innerHTML = '';
+    $('trailNow').textContent = `Run speed: ${studs(runSpeed())} studs/s` + (S.trail >= 0 ? ` (${TRAILS[S.trail].n}, ×${TRAILS[S.trail].mult})` : ' (no trail)');
+    TRAILS.forEach((T2, i) => {
+      const owned = S.trails.includes(i), on = S.trail === i;
+      const row = document.createElement('div'); row.className = 'shop-item trail' + (on ? ' on' : '');
+      const sw = document.createElement('div'); sw.className = 'swatch';
+      sw.style.background = `linear-gradient(90deg, ${T2.c.map(hexCss).join(', ')})`;
+      const tx = document.createElement('div'); tx.className = 'tx';
+      const nm = document.createElement('b'); nm.textContent = T2.n; nm.style.color = T2.col;
+      const sm = document.createElement('small');
+      sm.textContent = `${T2.rar} · ×${T2.mult} run speed → ${studs(moveSpeed(S.speed) * T2.mult)} studs/s`;
+      tx.append(nm, sm);
+      const b = document.createElement('button'); b.className = 'primary';
+      if (owned) {
+        b.textContent = on ? 'UNEQUIP' : 'EQUIP';
+        if (on) b.classList.add('ghost');
+        b.onclick = () => { S.trail = on ? -1 : i; if (!on) { sfx.equip(); toast(`✨ ${T2.n} equipped: ×${T2.mult} speed!`, 'gold'); } feltSpeed = runSpeed(); save(); renderTrails(); };
+      } else {
+        b.textContent = '$' + fmt(T2.cost); b.disabled = S.money < T2.cost;
+        b.onclick = () => {
+          if (S.money < T2.cost || S.trails.includes(i)) return;
+          S.money -= T2.cost; S.trails.push(i); S.trails.sort((a, c) => a - c);
+          if (S.trail < i) S.trail = i; // auto-equip if it's better than what you're wearing
+          feltSpeed = runSpeed(); sfx.buy(); sfx.equip(); toast(`✨ Bought the ${T2.n}! ×${T2.mult} speed`, 'gold'); save(); renderTrails();
+        };
+      }
+      row.append(sw, tx, b); box.appendChild(row);
+    });
+  }
+  function openTrails() { paused = true; keys.clear(); renderTrails(); $('trailShop').hidden = false; }
 
   // ---------------- Index ----------------
   function renderIndex() {
@@ -1360,7 +1490,20 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
     S.money += perSec * dt;
     S.incomePerSec = perSec;
 
+    const wasTread = onTread;
     onTread = !player.flying && player.x > TREADMILL.x && player.x < TREADMILL.x + TREADMILL.w && player.y > TREADMILL.y && player.y < TREADMILL.y + TREADMILL.h;
+    if (onTread && !wasTread) treadStart = runSpeed();
+    if (!onTread && wasTread && runSpeed() > treadStart * 1.002) {
+      toast(`🏃 Run speed ${studs(treadStart)} → ${studs(runSpeed())} studs/s (+${((runSpeed() / treadStart - 1) * 100).toFixed(1)}%)`, 'gold');
+    }
+    // You can feel it: every 4% faster pops a "FASTER!" and the camera widens with speed.
+    if (runSpeed() >= feltSpeed * 1.04) {
+      feltSpeed = runSpeed();
+      floater(player.x, player.y, `⚡ FASTER! ${studs(feltSpeed)} studs/s`, '#5ab0ff', 1.1, 8.5); sfx.faster();
+    }
+    const inShop = !player.flying && !player.carrying && Math.hypot(player.x - TRAIL_SHOP.x, player.y - TRAIL_SHOP.y) < TRAIL_SHOP.r;
+    if (inShop && !wasInShop) openTrails();
+    wasInShop = inShop;
     if (onTread) { S.speed += treadGain(S.treadLvl) * dt; if (Math.random() < dt * 2.5) floater(player.x + (Math.random() - 0.5) * 40, player.y, '+' + treadGain(S.treadLvl) + ' speed', '#5ab0ff', 0.7, 5.5); }
 
     for (const p of pedestals) if (!p.egg && !p.held) { p.respawn -= dt; if (p.respawn <= 0) { p.egg = { rarity: rollEgg(p) }; burst(p.x, p.y, RARITIES[p.egg.rarity].hex, 10, 2.5); } }
@@ -1397,7 +1540,7 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
       }
       const air = player.z > 0.6;
       if (len) {
-        const sp = moveSpeed(S.speed) * dt * (player.boost > 0 ? 1.7 : 1);
+        const sp = runSpeed() * dt * (player.boost > 0 ? 1.7 : 1);
         player.x += (dx / len) * sp; player.y += (dy / len) * sp;
         player.face = Math.atan2(dx, dy);
         // Camera drifts back behind the character while walking forward-ish.
@@ -1407,7 +1550,7 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
       pushOut(player, player.r, player.z > 2.2);
       // footsteps (sound depends on the ground)
       if (player.moving && !air) {
-        stepT -= dt * (moveSpeed(S.speed) / 190) * (player.boost > 0 ? 1.7 : 1);
+        stepT -= dt * (runSpeed() / 190) * (player.boost > 0 ? 1.7 : 1);
         if (stepT <= 0) {
           stepT = 0.3;
           const zd = ZONES[zoneAt(player.x)];
@@ -1588,6 +1731,7 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
     $('hMoney').textContent = '$' + fmt(S.money);
     $('hIncome').textContent = '+$' + fmt(S.incomePerSec || 0) + '/s';
     $('hSpeed').textContent = fmt(S.speed);
+    $('hRun').textContent = `${studs(runSpeed())} studs/s` + (S.trail >= 0 ? ` ×${TRAILS[S.trail].mult}` : '');
     $('hStreak').textContent = S.streak;
     const tot = S.stats.correct + S.stats.wrong;
     $('hAcc').textContent = tot ? Math.round((100 * S.stats.correct) / tot) + '% right' : 'streak';
@@ -1612,6 +1756,8 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
       const R = RARITIES[ped.egg.rarity];
       pr.innerHTML = `${isTouch ? 'Tap the egg' : 'Press <kbd>E</kbd>'} to ${ped.isDrop ? 'grab back the dropped' : 'steal the'} <b style="color:${R.color}">${R.name}</b> egg · <span class="stars">${stars(difficulty(ped.zone, ped.egg.rarity))}</span>`;
       pr.hidden = false;
+    } else if (wasInShop) {
+      pr.innerHTML = '✨ TRAILS SHOP · step out and back in to reopen'; pr.hidden = false;
     } else if (onTread) {
       pr.innerHTML = `🏃 Training! +${treadGain(S.treadLvl)} speed/s · Upgrade in the Shop`; pr.hidden = false;
     } else if (zoneAt(player.x) === -1 && !player.carrying && S.stats.correct === 0 && !player.flying) {
@@ -1622,6 +1768,7 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
   // ---------------- Sync 3D views ----------------
   const angDiff = (a, b) => { let d = (b - a) % (Math.PI * 2); if (d > Math.PI) d -= Math.PI * 2; if (d < -Math.PI) d += Math.PI * 2; return d; };
   const tmpColor = new THREE.Color(), tmpColor2 = new THREE.Color();
+  let stride = 0;
   function syncViews(t, dt) {
     // Player
     const flying = player.flying, fh = flying ? flying.h : player.z;
@@ -1629,7 +1776,9 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
     avatar.g.rotation.y += angDiff(avatar.g.rotation.y, player.face) * Math.min(1, dt * 12);
     avatar.body.rotation.x = flying ? flying.spin : 0;
     const mv = (player.moving || onTread) && !flying && player.z <= 0;
-    const sw = mv ? Math.sin(t * (onTread ? 16 : 11)) * 0.8 : 0;
+    const runK = Math.sqrt(runSpeed() * (player.boost > 0 ? 1.7 : 1) / 200);
+    stride += dt * (onTread ? 16 : 11 * runK) * (mv ? 1 : 0);
+    const sw = mv ? Math.sin(stride) * Math.min(1.1, 0.7 + runK * 0.15) : 0;
     avatar.legs[0].rotation.x = sw; avatar.legs[1].rotation.x = -sw;
     avatar.arms[0].rotation.x = player.carrying ? -Math.PI : -sw;
     avatar.arms[1].rotation.x = player.carrying ? -Math.PI : sw;
@@ -1701,7 +1850,7 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
         if (s && unlocked) {
           if (s.hatch > 0) { v.obj = eggMesh(s.rarity, 1.2); v.obj.position.set(v.cx, 2, v.cz); }
           else {
-            const m = Models.build(ZONES[s.zone].pets[s.rarity].spec);
+            const m = Models.build(ZONES[s.zone].pets[s.rarity].spec, { tier: s.rarity, color: RARITIES[s.rarity].hex });
             m.scale.setScalar(petSize(s.zone, s.rarity) / m.userData.height);
             const holder = new THREE.Group(); holder.add(m); holder.position.set(v.cx, 0.65, v.cz); holder.userData.model = m;
             v.obj = holder;
@@ -1724,6 +1873,7 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
     }
 
     animProps.forEach((f) => f(t));
+    updateTrail(t);
     updateOccluders();
 
     // Sky/fog follow the zone you're in (blends near the next gate).
@@ -1750,11 +1900,14 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
   function resize() {
     renderer.setSize(innerWidth, innerHeight, false);
     camera.aspect = innerWidth / innerHeight;
-    camera.fov = camera.aspect < 0.8 ? 68 : 50;
+    baseFov = camera.aspect < 0.8 ? 68 : 50;
+    camera.fov = baseFov;
     camera.updateProjectionMatrix();
   }
+  let baseFov = 50, fovKick = 0;
   addEventListener('resize', resize); resize();
 
+  const speedFx = $('speedFx');
   const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(), want = new THREE.Vector3(), look = new THREE.Vector3();
   let last = performance.now(), time = 0, camInit = false;
   function frame(now) {
@@ -1774,6 +1927,14 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
     camera.position.copy(camPos);
     if (shake > 0) { camera.position.x += (Math.random() - 0.5) * shake * 3; camera.position.y += (Math.random() - 0.5) * shake * 3; }
     camera.lookAt(camLook);
+    // Speed you can feel: the view widens and speed lines stream in as you get faster.
+    const going = started && !paused && player.moving && !player.flying;
+    const rs = going ? runSpeed() * (player.boost > 0 ? 1.7 : 1) : 0;
+    const kick = going ? Math.min(18, Math.max(0, (rs / 160 - 1) * 6)) : 0;
+    fovKick += (kick - fovKick) * Math.min(1, dt * 4);
+    if (Math.abs(camera.fov - (baseFov + fovKick)) > 0.01) { camera.fov = baseFov + fovKick; camera.updateProjectionMatrix(); }
+    speedFx.style.opacity = going ? Math.min(0.85, Math.max(0, (rs / 160 - 1.7) * 0.35) + (player.boost > 0 ? 0.35 : 0)).toFixed(2) : '0';
+    if (going) speedFx.style.transform = `rotate(${(Math.random() * 6).toFixed(1)}deg) scale(1.2)`;
     sun.position.set(px + fx * 12 + 18, 40, pz + fz * 12 + 22); sun.target.position.set(px + fx * 12, 0, pz + fz * 12);
     starField.position.copy(camera.position);
     moon.position.set(camera.position.x + 110, camera.position.y + 120, camera.position.z - 90);

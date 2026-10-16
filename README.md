@@ -8,7 +8,19 @@ A single-player 3D browser remake of Roblox's *Steal an Egg*, where every egg is
 Roblox-style 3D: studded baseplates, a blocky avatar, plastic-looking parts, floating name tags, a Roblox-style third-person camera behind the character (WASD moves relative to the camera, Space (or the touch JUMP button) jumps, ←/→ or drag to turn, scroll to zoom, touch thumbstick on phones), and props or guardians that fade when they block the view.
 
 ## Your base
-A big safe zone that guardians can't enter. It has 12 large plots, the treadmill and the spawn pad, with the path out to the Haunted Forest. Creatures grow with what they earn, from a small Common Goblin (~2.6 studs) to towering Divines from the Void Cosmos (~13 studs). Height = 2.6 × income^0.13.
+A big safe zone that guardians can't enter. It has 12 large plots, the treadmill, the **TRAILS SHOP** circle and the spawn pad, with the path out to the Haunted Forest. Creatures grow with what they earn, from a small Common Goblin (~2.6 studs) to towering Divines from the Void Cosmos (~13 studs). Height = 2.6 × income^0.13.
+
+## Creature looks
+Hatched creatures are sculpted rather than blocky: rounded, smooth-shaded parts, feathered wings and reflective materials. The rarer the creature, the grander it looks:
+- **Common / Uncommon:** matte, with soft rounded shapes.
+- **Rare / Epic:** glossy clear-coat. Epic adds a soft aura.
+- **Legendary:** metallic sheen, a stronger aura and orbiting motes of light.
+- **Mythic:** iridescent shimmer and a spinning rune circle underfoot.
+- **Divine:** polished gold-white finish, a floating golden halo, slowly turning sun rays behind the head, a golden rune circle and a swarm of gold and white motes.
+
+The **Divine Sun Sphinx** has its own hand-built model, based on a player's drawing. It sits on big clawed haunches, with a long slender neck and a round face framed by a pale-gold bob of hair with a curl on top. It has droopy cyan eyes and its tongue poking out, and its feather-tipped wing-arms are flung wide with white membranes sweeping down to its body.
+
+Guardians keep the classic blocky Roblox look.
 
 ## Zones
 Each zone is a big arena (about 90 × 70 studs):
@@ -18,7 +30,7 @@ Each zone is a big arena (about 90 × 70 studs):
 - Themed landmarks: a giant dead tree, a ruined statue, a pyramid, a step temple, ice crystals, an erupting volcano, a shipwreck and a floating monolith.
 
 ## Guardians
-- They chase faster than before: at or slightly above the speed their zone requires, and they **pounce** every few seconds (a burst of speed with a growl and a flaring red ring).
+- They chase at or above the speed their zone requires, faster in deeper zones (so you'll want a trail), and they **pounce** every few seconds (a burst of speed with a growl and a flaring red ring).
 - They path-find around walls and pillars, and barge through small scenery when close.
 - They stay dazed for 1.8s after you grab an egg. They chase you out of their zone and halfway through the previous one, then give up (**ESCAPED!**).
 - Caught while carrying an egg:
@@ -32,6 +44,29 @@ The original runs a 5-minute cycle that ends in a short night "reset": eggs rest
 - **Divine eggs spawn only at night.** The chance is 55% at nightfall and 30% at midnight, and the first night always brings one. It appears in a zone you've unlocked. A big **✨ A DIVINE EGG HAS SPAWNED! ✨** banner, a chime and a tracker show which zone it's in and how far away it is. A golden beam of light marks it from across the map.
 - **Divine questions are always the hardest (difficulty 10).** Divine creatures earn 120× income. There are 8 of them: Celestial Stag, Seraph Swan, Sun Sphinx, Jade Dragon King, Aurora Wolf, Sovereign Phoenix, Pearl Kraken and Archangel.
 - **At sunrise** a Divine egg still on its pedestal fades away. One you're carrying, or one dropped outside its zone, is safe.
+
+## Speed & trails
+- **Speed you can feel:** speed points turn into run speed on a steeper curve (8 studs/s at the start, ~18 at 450 points, ~25.6 at 50K).
+  - The HUD shows your actual run speed in studs/s.
+  - Every 4% gain pops a **⚡ FASTER!**.
+  - Stepping off the treadmill shows how much faster you got.
+  - As you speed up, the camera's field of view widens, speed lines stream in at the edges, and your stride quickens.
+- **Trails** (from the original): walk into the glowing yellow **TRAILS SHOP** circle in your base, or use Shop → Trails. Each trail multiplies your run speed. Only the equipped one counts (they don't stack), and it multiplies your treadmill speed.
+  - While you run, a glowing ribbon in the trail's colours streams behind you. Galaxy and higher also shed sparkles.
+  - The original goes up to ×14. Here the multipliers are compressed so guardians stay a threat, and deeper guardians run a bit faster to match.
+
+| Trail | Rarity | Speed | Price |
+|---|---|---|---|
+| Gray | Common | ×1.15 | $150 |
+| Green | Uncommon | ×1.3 | $2.5K |
+| Blue | Rare | ×1.45 | $25K |
+| Purple | Epic | ×1.6 | $200K |
+| Golden | Legendary | ×1.75 | $1.5M |
+| Red | Mythic | ×1.9 | $12M |
+| Galaxy | Legendary | ×2.1 | $100M |
+| Secret | Secret | ×2.35 | $800M |
+| Eternal | Eternal | ×2.6 | $4B |
+| Divine | Divine | ×2.9 | $20B |
 
 ## Jumping & sound
 - **Jumping:** a Roblox-style jump about 4 studs high. In mid-air you clear small scenery (rocks, bushes, trees). Walls and lair pillars are still too tall to jump.

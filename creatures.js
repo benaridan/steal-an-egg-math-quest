@@ -1,26 +1,83 @@
-// Blocky, Roblox-style mythical creature builder (Three.js).
-// Models.build(spec) -> THREE.Group with userData.tick(time, moving) and userData.height.
+// Mythical creature builder (Three.js).
+// Models.build(spec) -> blocky Roblox-style model (guardians).
+// Models.build(spec, { tier, color }) -> polished pet: rounded, smooth-shaded parts with reflective
+//   materials that get shinier with rarity, plus auras, motes, rune rings and (Divine) a halo and sun rays.
+// Either way the group has userData.tick(time, moving) and userData.height.
 // Models.portrait(spec) -> PNG data URL for UI.
 
 const Models = (() => {
   const T = THREE;
   const geos = new Map(), mats = new Map();
+  // Style of the model being built: null = classic blocky, else { tier } for a polished pet.
+  let ST = null;
 
   const boxG = (w, h, d) => {
-    const k = `b${w},${h},${d}`;
-    if (!geos.has(k)) geos.set(k, new T.BoxGeometry(w, h, d));
+    const k = `b${w},${h},${d}${ST ? 'r' : ''}`;
+    if (!geos.has(k)) geos.set(k, ST ? roundBox(w, h, d) : new T.BoxGeometry(w, h, d));
     return geos.get(k);
   };
+  // A box with soft, fully rounded edges and smooth normals (limbs come out capsule-like).
+  function roundBox(w, h, d) {
+    const r = Math.min(w, h, d) * 0.3, seg = 4, g = new T.BoxGeometry(w, h, d, seg, seg, seg);
+    const pos = g.attributes.position, nor = g.attributes.normal, v = new T.Vector3(), c = new T.Vector3();
+    const hx = w / 2 - r, hy = h / 2 - r, hz = d / 2 - r, cl = (a, m) => Math.max(-m, Math.min(m, a));
+    for (let i = 0; i < pos.count; i++) {
+      v.fromBufferAttribute(pos, i);
+      c.set(cl(v.x, hx), cl(v.y, hy), cl(v.z, hz));
+      v.sub(c).normalize();
+      nor.setXYZ(i, v.x, v.y, v.z);
+      pos.setXYZ(i, c.x + v.x * r, c.y + v.y * r, c.z + v.z * r);
+    }
+    return g;
+  }
   const coneG = (r, h, seg = 4) => {
-    const k = `c${r},${h},${seg}`;
-    if (!geos.has(k)) geos.set(k, new T.ConeGeometry(r, h, seg));
+    const sm = ST ? Math.max(seg, 16) : seg;
+    const k = `c${r},${h},${sm}`;
+    if (!geos.has(k)) geos.set(k, new T.ConeGeometry(r, h, sm));
     return geos.get(k);
   };
   const mat = (color, glowAmt = 0) => {
-    const k = `m${color},${glowAmt}`;
-    if (!mats.has(k)) mats.set(k, new T.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.05, flatShading: true, emissive: glowAmt ? color : 0x000000, emissiveIntensity: glowAmt }));
+    const k = `m${color},${glowAmt},${ST ? ST.tier : '-'}`;
+    if (!mats.has(k)) mats.set(k, ST ? petMat(color, glowAmt, ST.tier)
+      : new T.MeshStandardMaterial({ color, roughness: 0.55, metalness: 0.05, flatShading: true, emissive: glowAmt ? color : 0x000000, emissiveIntensity: glowAmt }));
     return mats.get(k);
   };
+  // Pet materials: smooth, reflective, and shinier / more radiant with rarity.
+  //            roughness metalness clearcoat selfGlow
+  const FINISH = [[0.62, 0.0, 0.0, 0], [0.52, 0.05, 0.2, 0], [0.42, 0.12, 0.45, 0], [0.34, 0.2, 0.7, 0.03],
+    [0.26, 0.34, 1, 0.07], [0.2, 0.42, 1, 0.1], [0.14, 0.55, 1, 0.16]];
+  function petMat(color, glowAmt, tier) {
+    const [rough, metal, coat, self] = FINISH[tier];
+    const m = new T.MeshPhysicalMaterial({
+      color, roughness: rough, metalness: metal, clearcoat: coat, clearcoatRoughness: 0.2,
+      envMap: envMap(), envMapIntensity: 0.35 + tier * 0.1,
+      emissive: color, emissiveIntensity: glowAmt ? glowAmt + 0.1 : self,
+    });
+    if (tier === 5) { m.iridescence = 0.8; m.iridescenceIOR = 1.5; }
+    if (tier === 6) { m.sheen = 1; m.sheenRoughness = 0.3; m.sheenColor = new T.Color(0xfff1b0); }
+    return m;
+  }
+  // A soft studio sky as a cube map, painted on canvases so it works in every renderer (game + portraits).
+  let envTex = null;
+  function envMap() {
+    if (envTex) return envTex;
+    const face = (kind) => {
+      const c = document.createElement('canvas'); c.width = c.height = 128;
+      const x = c.getContext('2d');
+      if (kind === 'top') { x.fillStyle = '#ffffff'; x.fillRect(0, 0, 128, 128); }
+      else if (kind === 'bottom') { x.fillStyle = '#3a3428'; x.fillRect(0, 0, 128, 128); }
+      else {
+        const g = x.createLinearGradient(0, 0, 0, 128);
+        g.addColorStop(0, '#dbeeff'); g.addColorStop(0.45, '#9fc4ea'); g.addColorStop(0.55, '#e8d2a8'); g.addColorStop(1, '#4a3f30');
+        x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+        if (kind === 'key') { const r = x.createRadialGradient(64, 36, 0, 64, 36, 34); r.addColorStop(0, '#ffffff'); r.addColorStop(1, 'rgba(255,255,255,0)'); x.fillStyle = r; x.fillRect(0, 0, 128, 128); }
+      }
+      return c;
+    };
+    envTex = new T.CubeTexture([face('key'), face('side'), face('top'), face('bottom'), face('side'), face('key')]);
+    envTex.needsUpdate = true;
+    return envTex;
+  }
   const glow = (color) => {
     const k = `g${color}`;
     if (!mats.has(k)) mats.set(k, new T.MeshBasicMaterial({ color }));
@@ -79,6 +136,16 @@ const Models = (() => {
     const wm = mat(s.wings, s.wingGlow ? 0.6 : 0), bm = mat(s.body2 ?? s.body);
     const ps = [-1, 1].map((sd) => {
       const p = pivot(root, sd * x, y, z);
+      if (ST) { // feathered wing: an arm bone with a fan of long rounded feathers
+        add(p, new T.CapsuleGeometry(0.14, span * 1.1, 6, 12), bm, sd * span * 0.6, 0.06, 0.5, 0, 0, Math.PI / 2);
+        for (let i = 0; i < 8; i++) {
+          const f = i / 7, len = 1.1 + Math.sin(f * Math.PI) * 0.9 + f * 0.7;
+          const fp = pivot(p, sd * (0.35 + f * span * 1.1), 0, 0.5); fp.rotation.y = -sd * (f * 0.75 - 0.1);
+          B(fp, 0.5, 0.09, len, wm, 0, -0.02 * i, -len / 2);
+        }
+        C(p, 0.12, 0.5, mat(BONE), sd * span * 1.25, 0.06, 0.55, 0, 0, -sd * Math.PI / 2);
+        return p;
+      }
       B(p, span, 0.12, 2.0, wm, sd * span / 2, 0, -0.4);
       B(p, span * 0.6, 0.12, 1.2, wm, sd * span * 0.95, 0, -0.7);
       B(p, span * 1.15, 0.26, 0.26, bm, sd * span * 0.6, 0.08, 0.55);
@@ -138,6 +205,7 @@ const Models = (() => {
     if (s.hood) B(head, hs + 0.3, hs + 0.2, hs * 0.8, mat(s.hood), 0, 0.15, -0.25);
     if (s.crown) for (let i = -1; i <= 1; i++) C(head, 0.15, 0.5, glow(s.crown), i * 0.45, hs / 2 + 0.25, 0);
     face(head, s, fz, 0.15, 0.35, 1);
+    root.userData.head = head;
     if (!s.snout && !s.beard) B(head, 0.7, 0.12, 0.06, mat(DARK), 0, -0.35, fz + 0.01);
     return (t, mv) => {
       const sw = mv ? Math.sin(t * 10) * 0.7 : Math.sin(t * 2) * 0.06;
@@ -180,6 +248,7 @@ const Models = (() => {
     if (s.ears) [-1, 1].forEach((sd) => C(head, 0.25, 0.7, c, sd * 0.45, 0.8, -0.2, -0.2));
     if (s.horns) horns(head, s.horns, s.hornColor, 0.55, 0.55);
     face(head, s, fz, 0.2, 0.38);
+    root.userData.head = head;
     if (s.spikes) spikesAlong(root, s.spikes, 5, 3.15 + lowY, 1.2 * L, -1.4 * L);
     if (s.glowLines) [-1, 1].forEach((sd) => B(root, 0.05, 0.15, 2.8 * L, glow(s.glowLines), sd * 1.01, 2.5 + lowY, 0));
     // tail
@@ -240,6 +309,7 @@ const Models = (() => {
       if (s.horns) horns(hd, s.horns, s.hornColor, 0.5, 0.5);
       if (s.crest) for (let i = 0; i < 3; i++) C(hd, 0.18, 0.8 - i * 0.15, glow(s.crest), 0, 0.7, 0.2 - i * 0.4, -0.5);
       necks.push(chain);
+      if (h === Math.floor((heads - 1) / 2)) root.userData.head = hd;
     }
     const wingTick = s.wings ? wings(root, s, 0.6, 1.4, -1.2, s.wingSpan ?? 2.8) : null;
     return (t, mv) => {
@@ -261,6 +331,7 @@ const Models = (() => {
     B(head, 1.05, 1.05, 1.05, c, 0, 0, 0);
     C(head, 0.3, 0.8, mat(s.beakColor ?? 0xf0b030), 0, -0.1, 0.9, Math.PI / 2);
     face(head, s, 0.53, 0.15, 0.3, 0.9);
+    root.userData.head = head;
     if (s.crest) for (let i = 0; i < 3; i++) C(head, 0.12, 0.7, glow(s.crest), 0, 0.7, -0.1 - i * 0.3, -0.6 - i * 0.2);
     for (let i = -1; i <= 1; i++) B(body, 0.5, 0.12, 1.8, mat(s.wings, s.wingGlow ? 0.8 : 0), i * 0.45, 2.9, -1.8, 0.3, i * 0.25);
     [-1, 1].forEach((sd) => { B(body, 0.18, 1.2, 0.18, mat(0xd9a030), sd * 0.4, 1.6, 0); C(body, 0.07, 0.35, mat(DARK), sd * 0.4, 1.0, 0.25, Math.PI / 2); });
@@ -272,8 +343,8 @@ const Models = (() => {
     const c = mat(s.body), b = mat(s.belly ?? s.body);
     B(root, 2.6, 2.6, 2.6, c, 0, 4.1, 0);
     B(root, 2.0, 1.3, 2.0, c, 0, 5.9, -0.2);
-    B(root, 1.2, 0.9, 1.2, c, 0, 6.9, -0.4);
     const head = pivot(root, 0, 4.1, 0);
+    root.userData.head = add(root, boxG(1.2, 0.9, 1.2), mat(s.body), 0, 6.9, -0.4);
     [-1, 1].forEach((sd) => {
       B(head, 0.7, 0.55, 0.1, glow(s.eye ?? 0x33ffcc), sd * 0.65, 0.2, 1.31);
       B(head, 0.15, 0.45, 0.12, mat(DARK), sd * 0.65, 0.2, 1.34);
@@ -304,30 +375,196 @@ const Models = (() => {
     const core = add(root, new T.OctahedronGeometry(1.1), mat(s.body, 0.7), 0, 3, 0);
     const shell = add(root, new T.OctahedronGeometry(1.5), new T.MeshBasicMaterial({ color: s.body, transparent: true, opacity: 0.25, wireframe: true }), 0, 3, 0);
     const eyes = pivot(root, 0, 3, 0);
+    root.userData.head = core;
     [-1, 1].forEach((sd) => B(eyes, 0.25, 0.3, 0.05, glow(s.eye ?? 0xffffff), sd * 0.35, 0.15, 0.85));
     const orb = pivot(root, 0, 3, 0);
     for (let i = 0; i < 4; i++) B(orb, 0.4, 0.4, 0.4, glow(s.orbs ?? s.body), Math.cos(i * 1.57) * 2.1, Math.sin(i * 2) * 0.4, Math.sin(i * 1.57) * 2.1, i, i);
     return (t) => { core.rotation.y = t; shell.rotation.y = -t * 0.6; orb.rotation.y = t * 1.5; root.position.y = Math.sin(t * 2.5) * 0.35; };
   }
 
-  const PLANS = { biped, quad, serpent, bird, kraken, wisp };
+  // The Divine Sun Sphinx, modelled on a player's drawing: a golden creature sitting on big clawed
+  // haunches, a long slender neck, a huge round head framed by a pale-gold bob of hair with a curl on top,
+  // droopy cyan eyes, its tongue poking out, and wing-arms flung wide with feathered tips and white
+  // membranes sweeping down to its body.
+  function sunsphinx(s, root) {
+    const gold = mat(s.body ?? 0xf6c443), deep = mat(s.arms ?? 0xf0a818), hair = new T.MeshPhysicalMaterial({ color: s.hair ?? 0xf8d88a, roughness: 0.75, sheen: 1, sheenRoughness: 0.5, sheenColor: new T.Color(0xffffff), envMap: envMap(), envMapIntensity: 0.3 });
+    const membrane = new T.MeshPhysicalMaterial({ color: s.membrane ?? 0xfffdf4, roughness: 0.35, sheen: 1, sheenColor: new T.Color(0xfff1b0), emissive: 0xfff6d0, emissiveIntensity: 0.2, side: T.DoubleSide, envMap: envMap() });
+    const claw = mat(0x8a5a10);
+    const sph = (r, ws = 28, hs = 20) => new T.SphereGeometry(r, ws, hs);
+    const cap = (r, l) => new T.CapsuleGeometry(r, l, 8, 20);
+    const body = pivot(root);
+    // haunches + big splayed hind feet
+    [-1, 1].forEach((sd) => {
+      const th = add(body, sph(1), gold, sd * 0.95, 1.05, -0.35); th.scale.set(0.95, 1.05, 1.25);
+      const ft = add(body, sph(1), gold, sd * 1.45, 0.22, 0.75, 0, sd * 0.5, 0); ft.scale.set(0.7, 0.26, 1.05);
+      for (let i = 0; i < 3; i++) C(body, 0.07, 0.32, claw, sd * 1.45 + sd * (i - 1) * 0.28 + sd * 0.3, 0.12, 1.65 - Math.abs(i - 1) * 0.1, Math.PI / 2, 0, -sd * 0.35);
+    });
+    // front legs standing straight down between the haunches
+    [-1, 1].forEach((sd) => {
+      add(body, cap(0.3, 2.8), gold, sd * 0.36, 1.75, 0.5);
+      const pw = add(body, sph(0.42), gold, sd * 0.42, 0.18, 0.85); pw.scale.set(1, 0.45, 1.4);
+      for (let i = 0; i < 3; i++) C(body, 0.05, 0.22, claw, sd * 0.42 + (i - 1) * 0.16, 0.1, 1.42, Math.PI / 2);
+    });
+    // long slender torso / neck
+    const neck = add(body, cap(0.6, 3.0), gold, 0, 3.4, 0.15); neck.scale.set(1, 1, 0.85);
+    add(body, sph(0.7), gold, 0, 2.0, -0.1).scale.set(1.2, 0.8, 1.1);
+    // wing-arms, flung wide, with feathered three-pronged tips and a white membrane down to the body
+    const arms = [-1, 1].map((sd) => {
+      const sh = pivot(body, sd * 0.45, 4.55, 0.25);
+      const arm = pivot(sh); arm.rotation.z = -sd * 1.2;
+      add(arm, cap(0.26, 1.7), deep, 0, 1.0, 0);
+      const fore = pivot(arm, 0, 1.9, 0); fore.rotation.z = sd * 0.3;
+      add(fore, cap(0.22, 1.5), deep, 0, 0.85, 0);
+      [-0.5, 0, 0.5].forEach((a, i) => {
+        const f = pivot(fore, 0, 1.6, 0); f.rotation.z = a + sd * 0.1;
+        const len = 0.9 - Math.abs(i - 1) * 0.15;
+        add(f, cap(0.13, len), deep, 0, len / 2 + 0.1, 0);
+        C(f, 0.13, 0.45, deep, 0, len + 0.45, 0, 0, 0, 0, 12);
+      });
+      // membrane: a curved sheet from the forearm sweeping down to the hip
+      const shape = new T.Shape();
+      shape.moveTo(0, 0); shape.lineTo(sd * 2.6, 1.0);
+      shape.quadraticCurveTo(sd * 2.3, -1.9, sd * 0.15, -2.45);
+      shape.lineTo(0, 0);
+      const mem = new T.Mesh(new T.ShapeGeometry(shape, 18), membrane);
+      mem.position.z = -0.12; mem.castShadow = true; sh.add(mem);
+      return sh;
+    });
+    // head: a big round face inside a pale-gold bob of hair, with a curl on top
+    const head = pivot(body, 0, 6.35, 0.35);
+    add(head, sph(1.12, 36, 28), gold, 0, -0.05, 0.38).scale.set(1, 1.04, 0.95);
+    const bob = add(head, sph(1.5, 36, 28), hair, 0, 0.05, -0.3); bob.scale.set(1.14, 1.04, 0.95);
+    for (let i = 0; i < 9; i++) { // jagged ends of the bob around the jaw
+      const a = -1.25 + (i / 8) * 2.5, side = Math.sin(a);
+      C(head, 0.28, 0.75, hair, side * 1.45, -1.0 - Math.cos(a) * 0.15, -0.35 + Math.cos(a) * 0.45, Math.PI, 0, side * 0.35, 10);
+    }
+    // the curled tuft on top: a tapering hook of hair
+    const curl = pivot(head, 0.05, 1.45, 0.05);
+    for (let i = 0; i < 7; i++) {
+      const a = 0.2 + i * 0.55, r = 0.42 - i * 0.03;
+      add(curl, sph(0.2 - i * 0.022, 14, 10), hair, Math.sin(a) * r * 0.9 - 0.1, 0.25 + (1 - Math.cos(a)) * r, 0);
+    }
+    // big droopy eyes looking down, cyan irises
+    const white = mat(0xffffff), iris = glow(s.eye ?? 0x5ee8ff), lid = gold, dark = mat(DARK);
+    [-1, 1].forEach((sd) => {
+      const ex = sd * 0.46, ey = 0.2, ez = 1.22;
+      add(head, sph(0.44, 24, 18), white, ex, ey, ez).scale.set(0.95, 1.05, 0.55);
+      add(head, sph(0.25, 20, 14), iris, ex + sd * 0.02, ey - 0.16, ez + 0.17).scale.set(1, 0.8, 0.4);
+      add(head, sph(0.12, 14, 10), mat(0x0a3a4a), ex + sd * 0.02, ey - 0.17, ez + 0.23).scale.set(1, 0.8, 0.3);
+      add(head, sph(0.06, 10, 8), glow(0xffffff), ex - 0.08, ey - 0.07, ez + 0.26);
+      const lidM = add(head, new T.SphereGeometry(0.47, 24, 12, 0, Math.PI * 2, 0, Math.PI * 0.42), lid, ex, ey + 0.02, ez + 0.02);
+      lidM.scale.set(0.97, 1.05, 0.6); lidM.rotation.x = 0.35;
+      add(head, new T.TorusGeometry(0.44, 0.025, 6, 30, Math.PI), dark, ex, ey + 0.02, ez + 0.12, 0, 0, 0).scale.set(1, 0.95, 1);
+    });
+    // a tiny mouth and the tongue sticking out to one side
+    B(head, 0.18, 0.04, 0.04, dark, 0.02, -0.55, 1.36, 0, 0, 0.1);
+    const tongue = pivot(head, -0.28, -0.62, 1.3);
+    add(tongue, cap(0.13, 0.22), mat(0xf07a8a), 0, -0.18, 0.08, 0.5, 0, 0.35).scale.set(1.25, 1, 0.5);
+    root.userData.head = head;
+    return (t, mv) => {
+      arms.forEach((sh, i) => { sh.rotation.z = (i ? 1 : -1) * Math.sin(t * (mv ? 6 : 1.6) + i * 0.4) * (mv ? 0.25 : 0.1); });
+      head.rotation.z = Math.sin(t * 0.9) * 0.08; head.rotation.x = 0.08 + Math.sin(t * 0.6) * 0.04;
+      tongue.rotation.z = Math.sin(t * 3) * 0.15;
+      curl.rotation.y = Math.sin(t * 1.2) * 0.2;
+      body.position.y = Math.sin(t * 1.4) * 0.05;
+    };
+  }
+
+  const PLANS = { biped, quad, serpent, bird, kraken, wisp, sunsphinx };
   const dragon = (s) => Object.assign({ long: 1.2, longNeck: true, tail: 'long', claws: true, wingSpan: 4 }, s, { type: 'quad' });
 
-  function build(spec) {
+  function build(spec, opts) {
     const s = spec.type === 'dragon' ? dragon(spec) : spec;
-    const group = new T.Group(), root = pivot(group);
-    const tick = PLANS[s.type](s, root);
+    const group = new T.Group(), root = pivot(group), fine = !!opts && opts.tier !== undefined;
+    ST = fine ? { tier: opts.tier } : null;
+    let tick;
+    try { tick = PLANS[s.type](s, root); } finally { ST = null; }
     group.scale.setScalar(s.scale ?? 1);
-    const box = new T.Box3().setFromObject(group);
-    group.userData.tick = tick;
+    tick(0, false);
+    group.updateMatrixWorld(true);
+    const box = new T.Box3().setFromObject(root);
+    group.userData.body = root;
     group.userData.height = box.max.y;
+    group.userData.tick = fine ? withFx(group, root, box, opts.tier, opts.color ?? 0xffffff, tick) : tick;
     return group;
+  }
+
+  // ---------- rarity effects (pets) ----------
+  const texCache = {};
+  function fxTex(kind) {
+    if (texCache[kind]) return texCache[kind];
+    const c = document.createElement('canvas'); c.width = c.height = 128;
+    const x = c.getContext('2d');
+    if (kind === 'glow') {
+      const g = x.createRadialGradient(64, 64, 0, 64, 64, 64);
+      g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(0.35, 'rgba(255,255,255,.35)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      x.fillStyle = g; x.fillRect(0, 0, 128, 128);
+    } else if (kind === 'rays') {
+      x.translate(64, 64);
+      for (let i = 0; i < 16; i++) {
+        x.rotate(Math.PI / 8);
+        const g = x.createLinearGradient(0, 0, 0, -64);
+        g.addColorStop(0, 'rgba(255,255,255,.9)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+        x.fillStyle = g; x.beginPath(); x.moveTo(-(i % 2 ? 4 : 7), 0); x.lineTo(0, i % 2 ? -46 : -64); x.lineTo(i % 2 ? 4 : 7, 0); x.fill();
+      }
+      const g = x.createRadialGradient(0, 0, 0, 0, 0, 22); g.addColorStop(0, 'rgba(255,255,255,1)'); g.addColorStop(1, 'rgba(255,255,255,0)');
+      x.fillStyle = g; x.fillRect(-64, -64, 128, 128);
+    } else { // rune circle
+      x.strokeStyle = '#fff'; x.lineWidth = 3;
+      x.beginPath(); x.arc(64, 64, 60, 0, 7); x.stroke(); x.beginPath(); x.arc(64, 64, 46, 0, 7); x.stroke();
+      x.lineWidth = 2;
+      for (let i = 0; i < 6; i++) { const a = (i / 6) * Math.PI * 2, b = a + (Math.PI * 2) / 3; x.beginPath(); x.moveTo(64 + Math.cos(a) * 46, 64 + Math.sin(a) * 46); x.lineTo(64 + Math.cos(b) * 46, 64 + Math.sin(b) * 46); x.stroke(); }
+      for (let i = 0; i < 12; i++) { const a = (i / 12) * Math.PI * 2; x.fillStyle = '#fff'; x.fillRect(64 + Math.cos(a) * 53 - 2, 64 + Math.sin(a) * 53 - 2, 4, 4); }
+    }
+    return (texCache[kind] = new T.CanvasTexture(c));
+  }
+  const addMat = (map, color, opacity) => new T.SpriteMaterial({ map, color, transparent: true, opacity, blending: T.AdditiveBlending, depthWrite: false });
+  const AURA = [0, 0, 0, 0.18, 0.26, 0.32, 0.38];
+  function withFx(group, root, box, tier, color, tick) {
+    const H = box.max.y, ctr = box.getCenter(new T.Vector3()), size = box.getSize(new T.Vector3());
+    const R = Math.max(size.x, size.z) * 0.5, gold = 0xffd700, fx = [];
+    if (tier >= 3) { // soft aura
+      const a = new T.Sprite(addMat(fxTex('glow'), tier === 6 ? 0xfff0a0 : color, AURA[tier]));
+      a.position.set(ctr.x, H * 0.5, ctr.z); a.scale.setScalar(Math.max(H, R * 2) * 1.5); group.add(a);
+      fx.push((t) => { a.material.opacity = AURA[tier] * (0.85 + Math.sin(t * 2) * 0.15); });
+    }
+    if (tier >= 4) { // orbiting motes of light
+      const n = [0, 0, 0, 0, 6, 10, 16][tier], orbit = new T.Group(); orbit.position.set(ctr.x, 0, ctr.z); group.add(orbit);
+      const mg = new T.OctahedronGeometry(Math.max(0.08, H * 0.025));
+      for (let i = 0; i < n; i++) {
+        const m = new T.Mesh(mg, new T.MeshBasicMaterial({ color: tier === 6 ? (i % 2 ? 0xffffff : gold) : color }));
+        const a = (i / n) * Math.PI * 2, r = R * 1.05 + (i % 3) * H * 0.06;
+        m.position.set(Math.cos(a) * r, H * (0.2 + ((i * 0.37) % 0.8)), Math.sin(a) * r);
+        m.userData.y0 = m.position.y; orbit.add(m);
+      }
+      fx.push((t) => { orbit.rotation.y = t * 0.6; orbit.children.forEach((m, i) => { m.position.y = m.userData.y0 + Math.sin(t * 1.7 + i) * H * 0.05; m.rotation.y = t * 3; }); });
+    }
+    if (tier >= 5) { // rune circle under its feet
+      const ringMat = new T.MeshBasicMaterial({ map: fxTex('rune'), color: tier === 6 ? gold : color, transparent: true, opacity: 0.75, blending: T.AdditiveBlending, depthWrite: false, side: T.DoubleSide });
+      const rr = new T.Mesh(new T.PlaneGeometry(1, 1), ringMat);
+      rr.rotation.x = -Math.PI / 2; rr.position.set(ctr.x, 0.05, ctr.z); rr.scale.setScalar(Math.max(R * 2.3, H * 0.7)); group.add(rr);
+      fx.push((t) => { rr.rotation.z = t * 0.4; ringMat.opacity = 0.55 + Math.sin(t * 2.4) * 0.2; });
+    }
+    if (tier === 6) { // godlike: a golden halo over the head and slowly turning sun rays behind it
+      const head = root.userData.head || root;
+      const hb = new T.Box3().setFromObject(head), hc = hb.getCenter(new T.Vector3());
+      const hs = Math.max(0.6, hb.getSize(new T.Vector3()).x), top = hb.max.y + hs * 0.35;
+      const halo = new T.Mesh(new T.TorusGeometry(hs * 0.42, hs * 0.045, 10, 40), new T.MeshBasicMaterial({ color: gold }));
+      halo.rotation.x = Math.PI / 2 - 0.25; halo.position.set(hc.x, top, hc.z); group.add(halo);
+      const rays = new T.Sprite(addMat(fxTex('rays'), 0xffe9a0, 0.45));
+      rays.position.set(hc.x, hc.y, hc.z - hs * 0.6); rays.scale.setScalar(hs * 2.6); group.add(rays);
+      fx.push((t) => {
+        halo.position.y = top + Math.sin(t * 2) * hs * 0.06;
+        rays.material.rotation = t * 0.3; rays.material.opacity = 0.38 + Math.sin(t * 1.3) * 0.1;
+      });
+    }
+    return (t, mv) => { tick(t, mv); for (const f of fx) f(t); };
   }
 
   // ---------- portraits ----------
   let pr = null;
   const cache = new Map();
-  function portrait(spec, key) {
+  function portrait(spec, key, opts) {
     if (key && cache.has(key)) return cache.get(key);
     if (!pr) {
       const renderer = new T.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
@@ -337,11 +574,12 @@ const Models = (() => {
       const d = new T.DirectionalLight(0xffffff, 0.8); d.position.set(4, 8, 10); scene.add(d);
       pr = { renderer, scene, camera: new T.PerspectiveCamera(32, 1, 0.1, 200) };
     }
-    const m = build(Object.assign({}, spec, { scale: 1 }));
+    const m = build(Object.assign({}, spec, { scale: 1 }), opts);
     m.userData.tick(0.6, false);
     m.rotation.y = 0.55;
     pr.scene.add(m);
-    const box = new T.Box3().setFromObject(m), size = box.getSize(new T.Vector3()), ctr = box.getCenter(new T.Vector3());
+    m.updateMatrixWorld(true);
+    const box = new T.Box3().setFromObject(m.userData.body), size = box.getSize(new T.Vector3()), ctr = box.getCenter(new T.Vector3());
     const dist = Math.max(size.x, size.y, size.z) * 1.9;
     pr.camera.position.set(ctr.x + dist * 0.25, ctr.y + dist * 0.2, ctr.z + dist);
     pr.camera.lookAt(ctr);

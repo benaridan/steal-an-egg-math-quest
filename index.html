@@ -8,12 +8,13 @@
 </head>
 <body>
 <canvas id="game"></canvas>
+<div id="speedFx"></div>
 
 <!-- HUD -->
 <div id="hud" hidden>
   <div class="stats">
     <div class="stat money"><span class="lbl">CASH</span><b id="hMoney">$0</b><small id="hIncome">+$0/s</small></div>
-    <div class="stat speed"><span class="lbl">SPEED</span><b id="hSpeed">0</b></div>
+    <div class="stat speed"><span class="lbl">SPEED</span><b id="hSpeed">0</b><small id="hRun"></small></div>
     <div class="stat clock" id="hudClock"><span class="lbl" id="hClockL">☀️ DAY</span><b id="hClock">4:00</b><small id="hClockS">until night</small></div>
     <div class="stat streak"><span class="lbl">STREAK</span><b id="hStreak">0</b><small id="hAcc"></small></div>
   </div>
@@ -43,7 +44,7 @@
     <div id="levels" class="levels"></div>
     <div class="how">
       <b>How to play:</b> Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>, turn the camera with <kbd>←</kbd><kbd>→</kbd> or by dragging, <kbd>Space</kbd> to jump, scroll to zoom (on touch: thumbstick on the left, drag to look, JUMP button on the right). Walk up to an egg and press <kbd>E</kbd> (or tap it).
-      Bring stolen eggs back to your base to hatch creatures that earn cash. Stand on the treadmill to build speed and unlock deeper zones.
+      Bring stolen eggs back to your base to hatch creatures that earn cash. Stand on the treadmill to build speed and unlock deeper zones, and buy a trail at the glowing TRAILS SHOP circle to run faster.
       Rarer eggs mean harder questions. Every 5 minutes night falls: eggs restock, base eggs hatch faster, and a rare <b>✨ Divine egg</b> may appear until sunrise. The lair egg at the back of each zone is the rarest.
       Squeeze through rubble gaps the monster can't fit through and hit the green boost pads to escape. The more a creature earns, the bigger it grows.
     </div>
@@ -84,6 +85,17 @@
   <div class="panel">
     <h2>🛒 SHOP</h2>
     <div id="shopItems"></div>
+    <button class="close primary">CLOSE</button>
+  </div>
+</div>
+
+<!-- Trails shop -->
+<div id="trailShop" class="overlay" hidden>
+  <div class="panel">
+    <h2>✨ TRAILS SHOP</h2>
+    <p class="sub">Trails make you run faster. Only the equipped one counts, and it multiplies the speed you train on the treadmill.</p>
+    <p class="sub" id="trailNow"></p>
+    <div id="trailItems"></div>
     <button class="close primary">CLOSE</button>
   </div>
 </div>
