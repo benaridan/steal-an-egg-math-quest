@@ -191,6 +191,7 @@ const Models = (() => {
       arms.push(p);
     });
     if (s.weapon) weapon(arms[1], s.weapon, s.weaponColor);
+    const wingTick = s.wings ? wings(root, s, 0.5 * W, 4.0, -0.7 * W, s.wingSpan ?? 3) : null;
     const head = pivot(root, 0, 4.75, 0);
     const hs = s.bulky ? 1.5 : 1.4;
     B(head, hs, hs, hs, sk, 0, 0, 0);
@@ -214,6 +215,7 @@ const Models = (() => {
       arms[0].rotation.x = -sw * 0.8;
       arms[1].rotation.x = (s.weapon ? -0.4 : 0) + sw * 0.6;
       head.rotation.y = Math.sin(t * 0.7) * 0.15;
+      if (wingTick) wingTick(t, !!s.float);
     };
   }
 
@@ -229,26 +231,30 @@ const Models = (() => {
       if (s.claws) C(p, 0.07, 0.3, mat(BONE), 0, -(1.7 + lowY) + 0.1, 0.55, Math.PI / 2);
       legs.push(p);
     });
-    const ln = s.longNeck ? 1 : 0;
-    B(root, 1.0, 1.4 + ln * 1.2, 1.0, c, 0, 3.0 + lowY + ln * 0.5, 1.55 * L + ln * 0.2, 0.5);
-    const head = pivot(root, 0, 3.6 + lowY + ln * 1.1, 2.1 * L + ln * 0.6);
-    B(head, 1.3, 1.1, 1.3, c, 0, 0, 0);
-    let fz = 0.65;
-    if (s.beak) {
-      B(head, 1.35, 1.15, 1.35, mat(s.headColor ?? 0xf2efe6), 0, 0, 0);
-      C(head, 0.35, 0.9, mat(s.beakColor ?? 0xf0b030), 0, -0.1, 1.05, Math.PI / 2);
-    } else {
-      B(head, 0.9, 0.6, 0.95, c, 0, -0.2, 1.0);
-      B(head, 0.85, 0.2, 0.85, b, 0, -0.6, 0.9);
-      fangs(head, 0.3, -0.55, 1.35, 2, 0.3);
-      B(head, 0.5, 0.15, 0.06, mat(DARK), 0, 0.02, 1.48);
+    const ln = s.longNeck ? 1 : 0, nh = s.heads ?? 1, heads = [];
+    for (let h = 0; h < nh; h++) {
+      const off = h - (nh - 1) / 2, hx = off * 1.15, hy = Math.abs(off) * -0.25;
+      B(root, 1.0, 1.4 + ln * 1.2, 1.0, c, hx * 0.7, 3.0 + lowY + ln * 0.5, 1.55 * L + ln * 0.2, 0.5, 0, -off * 0.3);
+      const head = pivot(root, hx, 3.6 + lowY + ln * 1.1 + hy, 2.1 * L + ln * 0.6 - Math.abs(off) * 0.3);
+      head.rotation.y = off * 0.35; heads.push(head);
+      B(head, 1.3, 1.1, 1.3, c, 0, 0, 0);
+      let fz = 0.65;
+      if (s.beak) {
+        B(head, 1.35, 1.15, 1.35, mat(s.headColor ?? 0xf2efe6), 0, 0, 0);
+        C(head, 0.35, 0.9, mat(s.beakColor ?? 0xf0b030), 0, -0.1, 1.05, Math.PI / 2);
+      } else {
+        B(head, 0.9, 0.6, 0.95, c, 0, -0.2, 1.0);
+        B(head, 0.85, 0.2, 0.85, b, 0, -0.6, 0.9);
+        fangs(head, 0.3, -0.55, 1.35, 2, 0.3);
+        B(head, 0.5, 0.15, 0.06, mat(DARK), 0, 0.02, 1.48);
+      }
+      if (s.mane) { B(head, 1.9, 1.7, 0.7, mat(s.mane), 0, 0.1, -0.5); if (!h) B(root, 1.4, 1.2, 1.3, mat(s.mane), 0, 3.0 + lowY, 1.3 * L); }
+      if (s.tusks) [-1, 1].forEach((sd) => C(head, 0.12, 0.7, mat(BONE), sd * 0.45, -0.1, 1.35, -0.5));
+      if (s.ears) [-1, 1].forEach((sd) => C(head, 0.25, 0.7, c, sd * 0.45, 0.8, -0.2, -0.2));
+      if (s.horns) horns(head, s.horns, s.hornColor, 0.55, 0.55);
+      face(head, s, fz, 0.2, 0.38);
+      if (h === Math.floor((nh - 1) / 2)) root.userData.head = head;
     }
-    if (s.mane) { B(head, 1.9, 1.7, 0.7, mat(s.mane), 0, 0.1, -0.5); B(root, 1.4, 1.2, 1.3, mat(s.mane), 0, 3.0 + lowY, 1.3 * L); }
-    if (s.tusks) [-1, 1].forEach((sd) => C(head, 0.12, 0.7, mat(BONE), sd * 0.45, -0.1, 1.35, -0.5));
-    if (s.ears) [-1, 1].forEach((sd) => C(head, 0.25, 0.7, c, sd * 0.45, 0.8, -0.2, -0.2));
-    if (s.horns) horns(head, s.horns, s.hornColor, 0.55, 0.55);
-    face(head, s, fz, 0.2, 0.38);
-    root.userData.head = head;
     if (s.spikes) spikesAlong(root, s.spikes, 5, 3.15 + lowY, 1.2 * L, -1.4 * L);
     if (s.glowLines) [-1, 1].forEach((sd) => B(root, 0.05, 0.15, 2.8 * L, glow(s.glowLines), sd * 1.01, 2.5 + lowY, 0));
     // tail
@@ -270,7 +276,7 @@ const Models = (() => {
       const sw = mv ? Math.sin(t * 10) * 0.6 : 0;
       legs[0].rotation.x = sw; legs[3].rotation.x = sw; legs[1].rotation.x = -sw; legs[2].rotation.x = -sw;
       tail.forEach((p, i) => (p.rotation.y = Math.sin(t * 3 - i * 0.6) * 0.18));
-      head.rotation.x = Math.sin(t * 1.5) * 0.06;
+      heads.forEach((hd, h) => (hd.rotation.x = Math.sin(t * 1.5 + h * 1.7) * 0.06));
       if (wingTick) wingTick(t, mv);
     };
   }
@@ -470,7 +476,66 @@ const Models = (() => {
     };
   }
 
-  const PLANS = { biped, quad, serpent, bird, kraken, wisp, sunsphinx };
+  // ---------- imported models (.glb) ----------
+  // Models from assets/models.js (base64 .glb). A creature whose spec names a `model` uses it
+  // once loaded and falls back to its hand-built plan otherwise.
+  const glb = {};
+  const ready = (async () => {
+    const data = window.GLB_MODELS || {};
+    if (!T.GLTFLoader) return;
+    const loader = new T.GLTFLoader();
+    await Promise.all(Object.entries(data).map(([key, d]) => new Promise((res) => {
+      try {
+        const bin = Uint8Array.from(atob(d.glb), (c) => c.charCodeAt(0)).buffer;
+        loader.parse(bin, '', (g) => { glb[key] = { scene: g.scene, o: d }; res(); }, (e) => { console.warn('model', key, e); res(); });
+      } catch (e) { console.warn('model', key, e); res(); }
+    })));
+  })();
+  const modelMats = new Map();
+  function imported(s, root) {
+    const { scene, o } = glb[s.model], obj = scene.clone(true), H = o.height ?? 8;
+    obj.rotation.y = o.rotY ?? 0;
+    // feet on the ground, centred, H units tall
+    const box = new T.Box3().setFromObject(obj), k = H / (box.max.y - box.min.y);
+    obj.scale.setScalar(k);
+    obj.position.set(-((box.min.x + box.max.x) / 2) * k, -box.min.y * k, -((box.min.z + box.max.z) / 2) * k);
+    const tier = ST ? ST.tier : -1;
+    obj.traverse((m) => {
+      if (!m.isMesh) return;
+      m.castShadow = true; m.receiveShadow = true;
+      if (tier < 0) return;
+      // pets get the same rarity finish as hand-built ones: reflective, and self-lit at the top tiers
+      const key = s.model + ':' + m.material.uuid + ':' + tier;
+      if (!modelMats.has(key)) {
+        const [rough, metal, , self] = FINISH[tier], mm = m.material.clone();
+        Object.assign(mm, { roughness: Math.max(0.25, rough), metalness: metal * 0.5, envMap: envMap(), envMapIntensity: 0.35 + tier * 0.1 });
+        if (self && mm.map) { mm.emissive = new T.Color(0xffffff); mm.emissiveMap = mm.map; mm.emissiveIntensity = self; }
+        modelMats.set(key, mm);
+      }
+      m.material = modelMats.get(key);
+    });
+    const body = pivot(root); body.add(obj);
+    // an invisible box where the head is, so the halo and sun rays know where (and how big) it is
+    const hd = add(root, boxG(H * 0.3, H * 0.3, H * 0.3), new T.MeshBasicMaterial({ visible: false }), 0, H * (o.head ?? 0.85), 0);
+    hd.castShadow = hd.receiveShadow = false; root.userData.head = hd;
+    // no baked animation: a gentle breathing bob and sway
+    return (t, mv) => { body.position.y = Math.sin(t * 2) * H * 0.012; body.rotation.z = Math.sin(t * (mv ? 6 : 1.2)) * 0.03; };
+  }
+
+  // The classic blocky Roblox avatar (only used for its portrait in the character picker).
+  function noob(s, root) {
+    const y = mat(0xf5cd30), b = mat(0x0d69ac), g = mat(0x4b974b);
+    [-0.5, 0.5].forEach((x) => B(root, 0.98, 2, 1, g, x, 1, 0));
+    B(root, 2, 2, 1, b, 0, 3, 0);
+    [-1.5, 1.5].forEach((x) => B(root, 0.98, 2, 1, y, x, 2.9, 0));
+    const head = add(root, new T.CylinderGeometry(0.62, 0.62, 1.2, 20), y, 0, 4.65, 0);
+    [-0.2, 0.2].forEach((x) => B(head, 0.1, 0.22, 0.04, mat(0x111111), x, 0.1, 0.62));
+    B(head, 0.4, 0.07, 0.04, mat(0x111111), 0, -0.22, 0.62);
+    root.userData.head = head;
+    return () => {};
+  }
+
+  const PLANS = { biped, quad, serpent, bird, kraken, wisp, sunsphinx, noob };
   const dragon = (s) => Object.assign({ long: 1.2, longNeck: true, tail: 'long', claws: true, wingSpan: 4 }, s, { type: 'quad' });
 
   function build(spec, opts) {
@@ -478,7 +543,7 @@ const Models = (() => {
     const group = new T.Group(), root = pivot(group), fine = !!opts && opts.tier !== undefined;
     ST = fine ? { tier: opts.tier } : null;
     let tick;
-    try { tick = PLANS[s.type](s, root); } finally { ST = null; }
+    try { tick = (s.model && glb[s.model] ? imported : PLANS[s.type])(s, root); } finally { ST = null; }
     group.scale.setScalar(s.scale ?? 1);
     tick(0, false);
     group.updateMatrixWorld(true);
@@ -590,5 +655,5 @@ const Models = (() => {
     return url;
   }
 
-  return { build, portrait, mat, glow, boxG };
+  return { build, portrait, mat, glow, boxG, ready };
 })();

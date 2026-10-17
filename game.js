@@ -11,6 +11,11 @@
   const TREADMILL = { x: 1230, y: 880, w: 200, h: 150 };
   const TRAIL_SHOP = { x: 1330, y: 450, r: 95 };
   const MAX_SLOTS = 12, START_SLOTS = 6;
+  // Playable characters. `model` is a key in assets/models.js; the classic blocky avatar needs none.
+  const CHARACTERS = [
+    { id: 'classic', n: 'Classic', desc: 'The blocky original.', spec: { type: 'noob' } },
+    { id: 'kai', n: 'Kai', desc: 'Never goes anywhere without a pet stag beetle.', model: 'kai', spec: { type: 'biped', model: 'kai', body: 0x5a3020, skin: 0xc07a50, legs: 0x6a6a6a, eye: 0x111111 } },
+  ];
 
   const RARITIES = [
     { name: 'Common', color: '#d9d4c7', hex: 0xd9d4c7, mult: 1, hatch: 5 },
@@ -81,7 +86,7 @@
         { n: 'Fire Imp', spec: { type: 'biped', body: 0xc02a10, horns: 'demon', hornColor: 0x2a1a10, eye: 0xffee00, claws: true } },
         { n: 'Hellhound', spec: { type: 'quad', body: 0x1a1414, spikes: 0xff4400, glowLines: 0xff5500, eye: 0xff3300, ears: true } },
         { n: 'Salamander', spec: { type: 'quad', low: true, long: 1.3, body: 0xe0501a, belly: 0xffb040, spikes: 0xffd000, tail: 'long', eye: 0xffff00 } },
-        { n: 'Magma Golem', spec: { type: 'biped', bulky: true, body: 0x2a2020, skin: 0x3a2a26, cracks: 0xff6a00, eye: 0xffaa00 } },
+        { n: 'Shiny', spec: { type: 'biped', bulky: true, model: 'shiny', body: 0xd8401a, skin: 0x3a6a66, cracks: 0xffd23f, eye: 0xffee00 } },
         { n: 'Chimera', spec: { type: 'quad', body: 0xb07a30, mane: 0x6a2a10, horns: 'ram', wings: 0x5a2a1a, tail: 'scorpion', eye: 0xff3300 } },
         { n: 'Inferno Wyrm', spec: { type: 'dragon', body: 0xa01a10, belly: 0xffb040, wings: 0xff5a00, wingGlow: true, spikes: 0xffd000, horns: 'demon', eye: 0xffff66 } },
       ] },
@@ -105,24 +110,124 @@
         { n: 'Celestial Dragon', spec: { type: 'dragon', body: 0xe8e0ff, belly: 0xffd700, wings: 0xffd700, wingGlow: true, spikes: 0xffd700, horns: 'antler', hornColor: 0xffd700, eye: 0x33ffff } },
         { n: 'Cosmic Phoenix', spec: { type: 'bird', body: 0xff4fa0, wings: 0x9a4fff, wingGlow: true, crest: 0x33ffff, eye: 0xffffff } },
       ] },
+    { name: 'Crystal Caverns', req: 160000, base: 5400, ground: 0x3a3452, edge: 0x28233c, sky: 0x4a3f6e, deco: 'crystal',
+      guard: { n: 'Crystallos the Gem Colossus', spec: { type: 'biped', bulky: true, body: 0x5a3f8a, skin: 0x7a5ab0, legs: 0x3a2a5a, armor: 0xc8a8ff, cracks: 0xff66ee, horns: 'demon', hornColor: 0xff9af4, eye: 0xff66ee, claws: true, weapon: 'club', weaponColor: 0xd8b8ff } },
+      pets: [
+        { n: 'Shard Imp', spec: { type: 'biped', body: 0x9a6ae0, horns: 'demon', hornColor: 0xff9af4, pointyEars: true, eye: 0xffffff } },
+        { n: 'Geode Tortoise', spec: { type: 'quad', low: true, body: 0x5a5070, belly: 0x8a7aa0, spikes: 0xff66ee, eye: 0xff9af4 } },
+        { n: 'Prism Wisp', spec: { type: 'wisp', body: 0xff88ee, orbs: 0x9af4ff } },
+        { n: 'Quartz Panther', spec: { type: 'quad', body: 0xe8e0ff, glowLines: 0xff66ee, ears: true, tail: 'long', eye: 0xff66ee } },
+        { n: 'Diamond Golem', spec: { type: 'biped', bulky: true, body: 0x9ad8ff, skin: 0xc8f0ff, cracks: 0x66ffff, eye: 0x66ffff } },
+        { n: 'Amethyst Wyrm', spec: { type: 'dragon', body: 0x8a4aff, belly: 0xe0c8ff, wings: 0xc08aff, wingGlow: true, spikes: 0xff9af4, horns: 'demon', hornColor: 0xffffff, eye: 0xffffff } },
+      ] },
+    { name: 'Storm Sky Isles', req: 520000, base: 16000, ground: 0xdfe8f2, edge: 0xb4c4d8, sky: 0x6f93c8, deco: 'sky',
+      guard: { n: 'Zephyros the Thunderbird', spec: { type: 'bird', body: 0x24305a, belly: 0x4a5a8a, wings: 0x4a6aff, wingGlow: true, crest: 0xfff066, eye: 0xfff066, wingSpan: 3.4 } },
+      pets: [
+        { n: 'Cloud Sprite', spec: { type: 'wisp', body: 0xf4f8ff, orbs: 0x9ad8ff } },
+        { n: 'Storm Hawk', spec: { type: 'bird', body: 0x5a6a8a, wings: 0x3a4a6a, crest: 0xfff066, eye: 0xfff066 } },
+        { n: 'Thunder Ram', spec: { type: 'quad', body: 0xe8ecf4, belly: 0xffffff, horns: 'ram', hornColor: 0xfff066, glowLines: 0xfff066, eye: 0x66ccff } },
+        { n: 'Pegasus', spec: { type: 'quad', body: 0xffffff, mane: 0x9ad8ff, wings: 0xf4f8ff, eye: 0x33ccff, tail: 'long' } },
+        { n: 'Thunder', spec: { type: 'biped', bulky: true, model: 'thunder', body: 0x4a5260, skin: 0x5a6270, armor: 0x1a3a6a, eye: 0x66ffff } },
+        { n: 'Roc', spec: { type: 'bird', body: 0x8a5a2a, belly: 0xe0c090, wings: 0x6a3a1a, crest: 0xff5a00, eye: 0xffaa00, wingSpan: 3.4 } },
+      ] },
+    { name: 'Mushroom Realm', req: 1.7e6, base: 48000, ground: 0x4a3a5c, edge: 0x342842, sky: 0x6a4a72, deco: 'fungal',
+      guard: { n: 'Mycelos the Spore King', spec: { type: 'biped', bulky: true, body: 0x6a3a5a, skin: 0xc8a08a, legs: 0x4a2a3a, leaves: 0xff3a6a, crown: 0x9cff3c, eye: 0x9cff3c, claws: true, weapon: 'staff', weaponColor: 0x9cff3c } },
+      pets: [
+        { n: 'Sporeling', spec: { type: 'biped', body: 0xd8c0a0, skin: 0xe8d8c0, leaves: 0xff4a4a, eye: 0x222222 } },
+        { n: 'Moss Hound', spec: { type: 'quad', body: 0x4a6a3a, belly: 0x8aa06a, spikes: 0x9cff3c, ears: true, eye: 0x9cff3c } },
+        { n: 'Glowcap Wisp', spec: { type: 'wisp', body: 0x9cff3c, orbs: 0x33ffcc } },
+        { n: 'Truffle Boar', spec: { type: 'quad', body: 0x5a3a2a, tusks: true, spikes: 0xff4a9a, ears: true, eye: 0xff4a9a } },
+        { n: 'Myconid Elder', spec: { type: 'biped', bulky: true, body: 0x8a5a7a, skin: 0xd8b0c8, leaves: 0x9a4aff, beard: 0xe8d8f0, eye: 0x9cff3c } },
+        { n: 'Fungal Hydra', spec: { type: 'serpent', heads: 3, body: 0x6a3a8a, body2: 0x5a2a7a, belly: 0xf0d0ff, crest: 0x9cff3c, spikes: 0xff66cc, eye: 0x9cff3c } },
+      ] },
+    { name: 'Mount Olympus', req: 5.5e6, base: 145000, ground: 0xe2dccb, edge: 0xbdb49c, sky: 0x9cc4f0, deco: 'olympus',
+      guard: { n: 'Kronos the Titan', spec: { type: 'biped', bulky: true, body: 0xc8b890, skin: 0xd8c8a8, legs: 0x8a7a5a, armor: 0xffd23f, belt: 0x8a5a20, beard: 0xf4f4f4, crown: 0xffd23f, eye: 0xffd700, weapon: 'staff', weaponColor: 0xffd700 } },
+      pets: [
+        { n: 'Satyr', spec: { type: 'biped', body: 0x8a5a3a, skin: 0xd8a878, legs: 0x6a4a2a, horns: 'ram', hornColor: 0xe8d8b0, eye: 0x3a2a1a } },
+        { n: 'Golden Hind', spec: { type: 'quad', body: 0xe8b84a, belly: 0xfff0c0, horns: 'antler', hornColor: 0xffd700, ears: true, eye: 0x222222 } },
+        { n: 'Nemean Lion', spec: { type: 'quad', body: 0xd8a040, mane: 0xa86a20, claws: true, ears: true, tail: 'long', eye: 0xffd700 } },
+        { n: 'Bronze Talos', spec: { type: 'biped', bulky: true, body: 0xb07a3a, skin: 0xc89050, armor: 0xffd23f, eye: 0xff6a00, weapon: 'trident', weaponColor: 0xffd23f } },
+        { n: 'Cyclops', spec: { type: 'biped', bulky: true, body: 0x7a6a5a, skin: 0xc8a888, horns: 'demon', hornColor: 0xe8d8b0, beard: 0x5a4a3a, eye: 0xff3300, weapon: 'club' } },
+        { n: 'Golden Pegasus', spec: { type: 'quad', body: 0xfff0c0, mane: 0xffd700, wings: 0xffd700, wingGlow: true, horns: 'unicorn', hornColor: 0xffd700, eye: 0x33ccff, tail: 'long' } },
+      ] },
+    { name: 'The Underworld', req: 1.8e7, base: 430000, ground: 0x2c2228, edge: 0x1a1218, sky: 0x2a1018, deco: 'underworld',
+      guard: { n: 'Cerberus the Hound of Hades', spec: { type: 'quad', heads: 3, long: 1.2, body: 0x1e1616, belly: 0x3a2a2a, spikes: 0x66ff99, glowLines: 0x66ff99, horns: 'demon', hornColor: 0x0e0a0a, ears: true, eye: 0x66ff99, claws: true, tail: 'long' } },
+      pets: [
+        { n: 'Bone Imp', spec: { type: 'biped', body: 0xe8e0c8, skin: 0xd8d0b8, horns: 'demon', hornColor: 0x3a2a2a, eye: 0x66ff99 } },
+        { n: 'Shade Hound', spec: { type: 'quad', body: 0x2a2a3a, glowLines: 0x66ff99, ears: true, tail: 'long', eye: 0x66ff99 } },
+        { n: 'Lost Soul', spec: { type: 'wisp', body: 0x66ff99, orbs: 0xc8ffe0 } },
+        { n: 'Styx Serpent', spec: { type: 'serpent', body: 0x1a3a3a, body2: 0x12302e, belly: 0x66ff99, glowLines: 0x66ff99, horns: 'demon', eye: 0x66ff99 } },
+        { n: 'Charon the Ferryman', spec: { type: 'biped', float: true, glowBody: true, body: 0x1a1a24, skin: 0xd8d0c0, hood: 0x2a2a38, eye: 0x66ff99, weapon: 'staff', weaponColor: 0x66ff99 } },
+        { n: 'Hades Drake', spec: { type: 'dragon', body: 0x2a1a2a, belly: 0x66ff99, wings: 0x3a1a3a, spikes: 0x66ff99, glowLines: 0x66ff99, horns: 'demon', hornColor: 0x111111, eye: 0x66ff99 } },
+      ] },
+    { name: 'Fae Wilds', req: 6e7, base: 1.3e6, ground: 0x62b884, edge: 0x449064, sky: 0xe8b0dc, deco: 'fairy',
+      guard: { n: 'Titania the Fae Queen', spec: { type: 'biped', float: true, glowBody: true, body: 0x9a4aff, skin: 0xffd8f0, wings: 0xff9ae0, wingGlow: true, crown: 0xffe066, eye: 0xff66cc, weapon: 'staff', weaponColor: 0xff66cc, wingSpan: 3.6 } },
+      pets: [
+        { n: 'Pixie', spec: { type: 'biped', float: true, body: 0x6ad87a, skin: 0xffe0c8, wings: 0xc8fff0, wingGlow: true, pointyEars: true, eye: 0x33ffcc, wingSpan: 2 } },
+        { n: 'Moonlit Fox', spec: { type: 'quad', body: 0xf0e0ff, belly: 0xffffff, ears: true, tail: 'long', glowLines: 0xff9ae0, eye: 0xff66cc } },
+        { n: 'Firefly Swarm', spec: { type: 'wisp', body: 0xffe066, orbs: 0x9cff3c } },
+        { n: 'Dryad', spec: { type: 'biped', body: 0x6a8a3a, skin: 0x9ac87a, leaves: 0xff9ae0, eye: 0xffe066, pointyEars: true } },
+        { n: 'Faerie Dragon', spec: { type: 'dragon', body: 0x8ae0ff, belly: 0xffd8f0, wings: 0xff9ae0, wingGlow: true, spikes: 0xffe066, horns: 'antler', hornColor: 0xffe066, eye: 0xffffff } },
+        { n: 'Moon Unicorn', spec: { type: 'quad', body: 0xf4f0ff, mane: 0xff9ae0, horns: 'unicorn', hornColor: 0xfff2a8, eye: 0x9a4aff, tail: 'long' } },
+      ] },
+    { name: 'Shadow Realm', req: 2e8, base: 3.9e6, ground: 0x18141f, edge: 0x0c0a12, sky: 0x100a18, deco: 'shadow',
+      guard: { n: 'Nyx the Shadow Wyrm', spec: { type: 'dragon', body: 0x120e1a, body2: 0x1e1630, belly: 0x5a1a8a, wings: 0x2a0a4a, wingGlow: true, spikes: 0xb000ff, horns: 'demon', hornColor: 0x05030a, glowLines: 0xb000ff, eye: 0xff2aff } },
+      pets: [
+        { n: 'Shadow Imp', spec: { type: 'biped', body: 0x1a1428, horns: 'demon', hornColor: 0xb000ff, pointyEars: true, eye: 0xff2aff } },
+        { n: 'Night Stalker', spec: { type: 'quad', body: 0x14101c, glowLines: 0xb000ff, spikes: 0x5a1a8a, ears: true, tail: 'long', eye: 0xff2aff } },
+        { n: 'Void Wisp', spec: { type: 'wisp', body: 0xb000ff, orbs: 0x220033 } },
+        { n: 'Nightmare Steed', spec: { type: 'quad', body: 0x0e0a14, mane: 0xb000ff, horns: 'demon', hornColor: 0xb000ff, eye: 0xff2a2a, tail: 'long' } },
+        { n: 'Umbral Serpent', spec: { type: 'serpent', segs: 8, body: 0x1a1428, body2: 0x120e1a, glowLines: 0xb000ff, spikes: 0xb000ff, horns: 'demon', eye: 0xff2aff } },
+        { n: 'Eclipse Dragon', spec: { type: 'dragon', body: 0x1e1630, belly: 0xff8a00, wings: 0xff6a00, wingGlow: true, spikes: 0xffd000, horns: 'demon', hornColor: 0x05030a, eye: 0xffd000 } },
+      ] },
+    { name: 'Elysium Heavens', req: 6.5e8, base: 1.2e7, ground: 0xfff4d8, edge: 0xe8d6a0, sky: 0xffe8b0, deco: 'heaven',
+      guard: { n: 'Solarion the Seraph', spec: { type: 'biped', float: true, glowBody: true, bulky: true, body: 0xfff4d0, skin: 0xffe8c0, armor: 0xffd23f, wings: 0xffffff, wingGlow: true, crown: 0xffd700, eye: 0xffd700, weapon: 'staff', weaponColor: 0xffd700, wingSpan: 4 } },
+      pets: [
+        { n: 'Cherub', spec: { type: 'biped', float: true, body: 0xfff0e0, skin: 0xffe0c8, wings: 0xffffff, crown: 0xffd700, eye: 0x33ccff, wingSpan: 2 } },
+        { n: 'Halo Hound', spec: { type: 'quad', body: 0xfff8f0, belly: 0xffffff, mane: 0xffd700, ears: true, tail: 'long', eye: 0x33ccff } },
+        { n: 'Light Wisp', spec: { type: 'wisp', body: 0xfff2a8, orbs: 0xffffff } },
+        { n: 'Sun Lion', spec: { type: 'quad', body: 0xffd860, mane: 0xff9a00, wings: 0xfff2a8, wingGlow: true, claws: true, eye: 0xffffff, tail: 'long' } },
+        { n: 'Throne Guardian', spec: { type: 'biped', bulky: true, body: 0xffffff, skin: 0xfff4e0, armor: 0xffd23f, wings: 0xfff2a8, wingGlow: true, eye: 0x33ccff, weapon: 'trident', weaponColor: 0xffd700 } },
+        { n: 'Radiant Phoenix', spec: { type: 'bird', body: 0xfff4d0, wings: 0xffd23f, wingGlow: true, crest: 0xffffff, eye: 0x33ccff, wingSpan: 3.2 } },
+      ] },
+    // The final level. Its boss and its Divine are imported models (assets/models.js).
+    { name: 'Bloom Cherry Blossom', req: 2.1e9, base: 3.6e7, ground: 0x9fcf8c, edge: 0x76a866, sky: 0xffd3e4, deco: 'blossom', final: true,
+      guard: { n: 'Bloom', spec: { type: 'biped', model: 'bloom', body: 0xe8d8c0, skin: 0xe8d8c0, horns: 'demon', hornColor: 0x3a1010, pointyEars: true, eye: 0xff2a4a } },
+      pets: [
+        { n: 'Petal Sprite', spec: { type: 'wisp', body: 0xffb7d5, orbs: 0xffffff } },
+        { n: 'Blossom Tanuki', spec: { type: 'quad', body: 0x8a6a4a, belly: 0xe8d8c0, ears: true, tail: 'long', eye: 0x222222 } },
+        { n: 'Koi Serpent', spec: { type: 'serpent', body: 0xff7a2a, body2: 0xffffff, belly: 0xffe8d8, spikes: 0xff3a3a, eye: 0x222222 } },
+        { n: 'Sakura Fox', spec: { type: 'quad', body: 0xffc8dc, belly: 0xffffff, ears: true, tail: 'long', glowLines: 0xff6aa0, eye: 0xff3a7a } },
+        { n: 'Tengu', spec: { type: 'biped', body: 0x2a2a3a, skin: 0xd8303a, wings: 0x2a2a3a, snout: true, eye: 0xffd23f, weapon: 'staff', weaponColor: 0xff9ac8, wingSpan: 2.6 } },
+        { n: 'Sakura Dragon', spec: { type: 'dragon', body: 0xffc0d8, belly: 0xffffff, wings: 0xff8ab8, wingGlow: true, spikes: 0xff4a8a, horns: 'antler', hornColor: 0x6a3a2a, eye: 0xff2a6a } },
+      ] },
   ];
   // One divine creature per zone (rarity 6).
   [
     { n: 'Celestial Stag', spec: { type: 'quad', body: 0xfff8e6, belly: 0xffffff, mane: 0xffd700, horns: 'antler', hornColor: 0xffd700, eye: 0x33ffff } },
     { n: 'Seraph Swan', spec: { type: 'bird', body: 0xffffff, wings: 0xffe680, wingGlow: true, crest: 0xffd700, eye: 0x33ccff } },
-    { n: 'Sun Sphinx', spec: { type: 'sunsphinx', body: 0xf6c443, arms: 0xf0a818, hair: 0xf8d887, membrane: 0xfffdf4, eye: 0x5ee8ff } },
+    { n: 'Sun Sphinx', spec: { type: 'sunsphinx', model: 'sunsphinx', body: 0xf6c443, arms: 0xf0a818, hair: 0xf8d887, membrane: 0xfffdf4, eye: 0x5ee8ff } },
     { n: 'Jade Dragon King', spec: { type: 'dragon', body: 0x3cffb0, belly: 0xfff1a8, wings: 0xffd700, wingGlow: true, spikes: 0xffd700, horns: 'antler', hornColor: 0xffd700, eye: 0xffffff } },
     { n: 'Aurora Wolf', spec: { type: 'quad', body: 0xe8f6ff, belly: 0xffffff, mane: 0x7dffea, ears: true, tail: 'long', eye: 0xff66ff } },
     { n: 'Sovereign Phoenix', spec: { type: 'bird', body: 0xffd23f, wings: 0xff5a00, wingGlow: true, crest: 0xffffff, eye: 0xffffff } },
     { n: 'Pearl Kraken', spec: { type: 'kraken', body: 0xf4e8ff, suckers: 0xffd700, eye: 0x33ffff } },
     { n: 'Archangel', spec: { type: 'biped', float: true, glowBody: true, body: 0xffffff, skin: 0xfff1d0, wings: 0xffffff, wingGlow: true, crown: 0xffd700, eye: 0x33ffff, weapon: 'staff', weaponColor: 0xffd700 } },
+    { n: 'Prismatic Dragon', spec: { type: 'dragon', body: 0xffffff, belly: 0xffe8ff, wings: 0xff9af4, wingGlow: true, spikes: 0x9af4ff, horns: 'antler', hornColor: 0xffd700, glowLines: 0x9af4ff, eye: 0xff66ee } },
+    { n: 'Storm Sovereign', spec: { type: 'quad', body: 0xffffff, mane: 0xfff066, wings: 0xfff2a8, wingGlow: true, horns: 'unicorn', hornColor: 0xfff066, glowLines: 0x66ccff, eye: 0x66ccff, tail: 'long' } },
+    { n: 'Elder Mycelium', spec: { type: 'serpent', heads: 3, body: 0xf0e0ff, body2: 0xe0c8ff, belly: 0xffffff, crest: 0xffd700, spikes: 0x9cff3c, glowLines: 0x9cff3c, eye: 0xffffff } },
+    { n: 'Zeus Eagle', spec: { type: 'bird', body: 0xffffff, belly: 0xfff2a8, wings: 0xffd700, wingGlow: true, crest: 0x66ccff, eye: 0x66ccff, wingSpan: 3.4 } },
+    { n: 'Soul Phoenix', spec: { type: 'bird', body: 0xc8ffe0, wings: 0x66ff99, wingGlow: true, crest: 0xffffff, eye: 0xffffff, wingSpan: 3.2 } },
+    { n: 'Oberon the Fae King', spec: { type: 'biped', float: true, glowBody: true, body: 0xfff4ff, skin: 0xffe8f4, wings: 0xff9ae0, wingGlow: true, crown: 0xffe066, eye: 0x33ffcc, weapon: 'staff', weaponColor: 0xffe066, wingSpan: 3.4 } },
+    { n: 'Moonlight Wyrm', spec: { type: 'dragon', body: 0xe8e0ff, belly: 0xffffff, wings: 0xc8b0ff, wingGlow: true, spikes: 0xffffff, horns: 'antler', hornColor: 0xd0c0ff, glowLines: 0xb000ff, eye: 0xff2aff } },
+    { n: 'Cheese', spec: { type: 'quad', model: 'cheese', body: 0xf6d000, belly: 0x6a7aff, ears: true, tail: 'long', eye: 0x222222 } },
+    { n: 'The Eternal One', spec: { type: 'biped', float: true, glowBody: true, bulky: true, body: 0xffffff, skin: 0xfff8e0, armor: 0xffd700, wings: 0xffd700, wingGlow: true, crown: 0xffffff, eye: 0x33ffff, weapon: 'staff', weaponColor: 0xffffff, wingSpan: 4.2 } },
   ].forEach((d, z) => ZONES[z].pets.push(d));
   const WORLD_W = GARDEN_W + ZONES.length * ZONE_W;
   const zoneX = (z) => GARDEN_W + z * ZONE_W;
   const zoneAt = (x) => (x < GARDEN_W ? -1 : Math.min(ZONES.length - 1, Math.floor((x - GARDEN_W) / ZONE_W)));
 
   const income = (z, r) => ZONES[z].base * RARITIES[r].mult;
-  const difficulty = (z, r) => (r === DIVINE ? 10 : Math.min(10, 1 + Math.round(((z + r) * 9) / 12)));
+  const difficulty = (z, r) => (r === DIVINE ? 10 : Math.min(10, 1 + Math.round(((z + r) * 9) / (ZONES.length + 4))));
   // Speed points -> run speed (px/s). Steeper than before so training is something you can feel.
   const moveSpeed = (s) => 160 + 75 * Math.log10(1 + s);
   // Trails (from the original): bought at the TRAILS SHOP circle in your base, each one multiplies your
@@ -139,32 +244,46 @@
     { n: 'Secret Trail', rar: 'Secret', col: '#ff4a6a', mult: 2.35, cost: 8e8, c: [0xffffff, 0xff1a4a, 0x8a0030], sparkle: true },
     { n: 'Eternal Trail', rar: 'Eternal', col: '#7dffff', mult: 2.6, cost: 4e9, c: [0xffffff, 0x66ffff, 0x3a6aff], sparkle: true },
     { n: 'Divine Trail', rar: 'Divine', col: '#fff2a8', mult: 2.9, cost: 2e10, c: [0xffffff, 0xfff0a0, 0xffa000], sparkle: true },
+    // Beyond the original's list, for the deeper zones added later.
+    { n: 'Rainbow Trail', rar: 'Celestial', col: '#ff9af4', mult: 3.15, cost: 1.2e11, c: [0xff4a4a, 0xffd23f, 0x4aff7a, 0x4aa3ff, 0xb46cff], sparkle: true },
+    { n: 'Void Trail', rar: 'Celestial', col: '#b000ff', mult: 3.4, cost: 8e11, c: [0xffffff, 0xb000ff, 0x1a0030], sparkle: true },
+    { n: 'Omega Trail', rar: 'Omega', col: '#ffffff', mult: 3.7, cost: 6e12, c: [0xffffff, 0x33ffff, 0xffd700, 0xff2aff], sparkle: true },
   ];
   const trailMult = () => (S.trail >= 0 ? TRAILS[S.trail].mult : 1);
   const runSpeed = () => moveSpeed(S.speed) * trailMult();
   // Guardians run a little faster than the speed their zone requires, more so in deeper zones.
-  const guardSpeed = (z) => moveSpeed(ZONES[z].req) * (1 + 0.015 * z) * (1 + 0.08 * z);
+  // Past the Void Cosmos the gap keeps growing slowly, so the late trails stay worth buying.
+  const guardSpeed = (z) => moveSpeed(ZONES[z].req) * (z <= 7 ? (1 + 0.015 * z) * (1 + 0.08 * z) : 1.724 + 0.13 * (z - 7));
   const treadGain = (lvl) => Math.round(1.75 ** (lvl - 1) * 10) / 10;
   const treadCost = (lvl) => Math.round(25 * 2.4 ** (lvl - 1));
   const slotCost = (n) => Math.round(80 * 3 ** (n - START_SLOTS));
 
   function rollRarity(z) {
     const base = [60, 25, 10, 4, 1, 0.3];
-    const w = base.map((b, r) => b * (1 + 0.45 * z) ** r);
+    const zf = Math.min(z, 7) + 0.3 * Math.max(0, z - 7);
+    const w = base.map((b, r) => b * (1 + 0.45 * zf) ** r);
     let t = Math.random() * w.reduce((a, b) => a + b, 0);
     for (let r = 0; r < w.length; r++) if ((t -= w[r]) <= 0) return r;
     return 0;
   }
   // Eggs deeper in a zone (and in the lair) roll rarer.
   const rollEgg = (p) => Math.min(5, rollRarity(p.zone) + [Math.random() < 0.2 ? 1 : 0, Math.random() < 0.5 ? 1 : 0, 1, 2][p.tier]);
+  // Short number names (Roblox style): 1.25K, 3.4M, 12B, 7.5T, 1.2Qa … then 1.23e45 beyond decillions.
+  const SUFFIX = ['K', 'M', 'B', 'T', 'Qa', 'Qi', 'Sx', 'Sp', 'Oc', 'No', 'Dc'];
   function fmt(n) {
+    if (!isFinite(n)) return '∞';
     n = Math.floor(n);
     if (n < 1000) return String(n);
-    const u = ['K', 'M', 'B', 'T'];
-    let i = -1;
-    while (n >= 1000 && i < u.length - 1) { n /= 1000; i++; }
-    return (n < 10 ? n.toFixed(2) : n < 100 ? n.toFixed(1) : Math.floor(n)) + u[i];
+    let e = Math.floor(Math.log10(n) / 3);
+    if (e > SUFFIX.length) return n.toExponential(2).replace('e+', 'e');
+    let v = n / 1000 ** e;
+    if (v < 1) { e--; v *= 1000; } else if (v >= 1000) { e++; v /= 1000; }
+    // truncate (not round) so 999.99K never shows as "1000K"
+    const s = v < 10 ? (Math.floor(v * 100) / 100).toFixed(2) : v < 100 ? (Math.floor(v * 10) / 10).toFixed(1) : String(Math.floor(v));
+    return s + SUFFIX[e - 1];
   }
+  // Like fmt() but keeps one decimal for small values (speed per second, etc.).
+  const fmtD = (n) => (n < 100 ? String(Math.round(n * 10) / 10) : fmt(n));
 
   // ---------------- Persistent state ----------------
   const SAVE_KEY = 'stealAnEggMath_v1';
@@ -174,7 +293,7 @@
   const fresh = () => ({
     clock: 0, nights: 0,
     level: null, money: 0, speed: 0, treadLvl: 1, slotsUnlocked: START_SLOTS,
-    slots: Array(MAX_SLOTS).fill(null), discovered: {}, streak: 0, trails: [], trail: -1,
+    slots: Array(MAX_SLOTS).fill(null), discovered: {}, streak: 0, trails: [], trail: -1, character: 'classic',
     stats: { correct: 0, wrong: 0, best: 0 },
   });
   let S = fresh();
@@ -200,6 +319,7 @@
     out.nights = int(d.nights, 0, 1e9, 0);
     if (Array.isArray(d.trails)) out.trails = [...new Set(d.trails.filter((i) => Number.isInteger(i) && i >= 0 && i < TRAILS.length))].sort((a, b) => a - b);
     out.trail = Number.isInteger(d.trail) && out.trails.includes(d.trail) ? d.trail : -1;
+    out.character = CHARACTERS.some((c) => c.id === d.character) ? d.character : 'classic';
     const st = d.stats && typeof d.stats === 'object' ? d.stats : {};
     out.stats = { correct: int(st.correct, 0, 1e9, 0), wrong: int(st.wrong, 0, 1e9, 0), best: int(st.best, 0, 1e9, 0) };
     if (d.discovered && typeof d.discovered === 'object') {
@@ -342,7 +462,18 @@
     volcano: { stone: 0x2a2226, moss: 0x4a2a20, torch: 0xff5a00 },
     abyss: { stone: 0x3a4a6a, moss: 0xff5c9a, torch: 0x33ffcc },
     cosmic: { stone: 0x4a3a7a, moss: 0x33ffff, torch: 0xb46cff },
+    crystal: { stone: 0x4a4266, moss: 0xb85ad0, torch: 0xff66ee },
+    sky: { stone: 0xe8ecf4, moss: 0xffffff, torch: 0xfff066 },
+    fungal: { stone: 0x6a5a6a, moss: 0x5a8a34, torch: 0x9cff3c },
+    olympus: { stone: 0xf2eee2, moss: 0x8a9a5a, torch: 0xffb52e },
+    underworld: { stone: 0x3a3038, moss: 0x2f8a5a, torch: 0x66ff99 },
+    fairy: { stone: 0xd8c8f0, moss: 0xff9ae0, torch: 0xffe066 },
+    shadow: { stone: 0x241e30, moss: 0x5a1a8a, torch: 0xb000ff },
+    heaven: { stone: 0xffffff, moss: 0xffe9a8, torch: 0xfff2a8 },
+    blossom: { stone: 0xe6d8cc, moss: 0xffa8cc, torch: 0xff6aa0 },
   };
+  // Themes whose wall moss glows in the dark.
+  const GLOW_MOSS = new Set(['volcano', 'cosmic', 'abyss', 'underworld']);
   // Circle colliders (px), bucketed along x so lookups stay cheap.
   const colliders = new Map(), CB = 400;
   function addCollider(x, y, r, soft = false) { const k = Math.floor(x / CB); if (!colliders.has(k)) colliders.set(k, []); colliders.get(k).push({ x, y, r, soft }); }
@@ -439,7 +570,7 @@
     part(g, 0.8, 1.2, 4.6, mat(0x2a2e36), tx + T.w * U / 2 + 0.2, 3.6, tz);
     const tl = makeLabel('TREADMILL', { size: 48, color: '#ffd23f', color2: '#9fd4ff', h: 1.0 });
     tl.position.set(tx, 5.6, tz); g.add(tl);
-    animProps.push((t) => { beltTex.offset.y = -t * (onTread ? 3 : 0.3); setLabel(tl, `TREADMILL Lv${S.treadLvl}\n+${treadGain(S.treadLvl)} speed/s`); });
+    animProps.push((t) => { beltTex.offset.y = -t * (onTread ? 3 : 0.3); setLabel(tl, `TREADMILL Lv${S.treadLvl}\n+${fmtD(treadGain(S.treadLvl))} speed/s`); });
     // trails shop: a glowing yellow circle you walk into (like the original)
     const ts = TRAIL_SHOP, sx2 = ts.x * U, sz2 = ts.y * U, sr = ts.r * U;
     const disc = new THREE.Mesh(new THREE.CircleGeometry(sr, 40), new THREE.MeshBasicMaterial({ color: 0xffd23f, transparent: true, opacity: 0.35 }));
@@ -461,8 +592,9 @@
   }
 
   function slotPos(i) { return { x: 100 + (i % 4) * 270, y: 320 + Math.floor(i / 4) * 270, w: 220, h: 220 }; }
-  // Creatures grow with what they earn (income spans 1 to ~200,000/s, so scale on a gentle power curve).
-  const petSize = (z, r) => 2.6 * income(z, r) ** 0.13;
+  // Creatures grow with what they earn on a gentle power curve; past ~200K/s (income now reaches
+  // over a billion a second) the growth flattens so the giants still fit on their plots.
+  const petSize = (z, r) => { const v = income(z, r); return v <= 2e5 ? 2.6 * v ** 0.13 : 2.6 * 2e5 ** 0.13 * (v / 2e5) ** 0.025; };
   const slotViews = [];
   function buildSlots(parent) {
     for (let i = 0; i < MAX_SLOTS; i++) {
@@ -489,7 +621,7 @@
     title.position.set(x0 + 5, 9, SPAWN.y * U + 13); g.add(title);
 
     // Winding dirt path from the gate to the lair
-    const pathM = mat(new THREE.Color(Z.ground).lerp(new THREE.Color(Z.deco === 'snow' ? 0x9fb8c8 : 0xb59a6a), 0.45).getHex());
+    const pathM = mat(new THREE.Color(Z.ground).lerp(new THREE.Color(Z.deco === 'snow' || Z.deco === 'sky' ? 0x9fb8c8 : Z.deco === 'olympus' || Z.deco === 'heaven' ? 0xffe9a8 : Z.deco === 'shadow' || Z.deco === 'underworld' ? 0x4a3a4a : 0xb59a6a), 0.45).getHex());
     L.path.forEach((b, i) => {
       mesh(g, new THREE.CylinderGeometry(2.4, 2.4, 0.08, 14), pathM, b.x * U, 0.04, b.y * U).castShadow = false;
       if (!i) return;
@@ -498,7 +630,7 @@
     });
 
     // Broken walls: chains of blocks. Rubble gaps let the player squeeze through but not the big guardian.
-    const stoneM = mat(T.stone), mossM = Z.deco === 'volcano' || Z.deco === 'cosmic' || Z.deco === 'abyss' ? glow(T.moss) : mat(T.moss);
+    const stoneM = mat(T.stone), mossM = GLOW_MOSS.has(Z.deco) ? glow(T.moss) : mat(T.moss);
     for (const w of L.walls) {
       for (let y = w.y0; y <= w.y1; y += 46) {
         const bx = w.x + (rnd() - 0.5) * 10;
@@ -578,6 +710,7 @@
     const grp = new THREE.Group(); grp.position.set(x * U, 0, y * U); grp.rotation.y = rnd() * Math.PI; g.add(grp);
     const P = (w, h, d, m, px, py, pz, o) => part(grp, w, h, d, m, px, py, pz, o);
     const M = (geo, m, px, py, pz) => mesh(grp, geo, m, px, py, pz);
+    const C2 = (rad, h, m, px, py, pz) => M(new THREE.ConeGeometry(rad, h, 6), m, px, py, pz);
     let r = 110;
     switch (type) {
       case 'forest': // giant dead tree
@@ -609,6 +742,93 @@
           const ring2 = new THREE.Mesh(new THREE.TorusGeometry(5.2, 0.15, 6, 32), glow(0xb46cff)); ring2.position.y = 8; grp.add(ring2);
           M(new THREE.DodecahedronGeometry(2.5), mat(0x3a2f5a), 0, 1.2, 0);
           animProps.push((t) => { mono.position.y = 8 + Math.sin(t) * 0.6; ring.rotation.x = t * 0.7; ring2.rotation.y = t * 0.5; ring2.rotation.x = 1 + t * 0.3; }); r = 60; } break;
+      case 'crystal': // towering crystal cluster
+        { const cols = [0xff66ee, 0x9af4ff, 0xb46cff];
+          M(new THREE.DodecahedronGeometry(3.5), mat(0x2a2440), 0, 1, 0);
+          for (let i = 0; i < 7; i++) {
+            const h = 6 + rnd() * 10, c = M(new THREE.OctahedronGeometry(1.4 + rnd() * 0.8), mat(cols[i % 3], 0.55), (rnd() - 0.5) * 5, h / 2, (rnd() - 0.5) * 5);
+            c.scale.set(1, h / 2.6, 1); c.rotation.z = (rnd() - 0.5) * 0.7; c.rotation.x = (rnd() - 0.5) * 0.7;
+          }
+          const gem = M(new THREE.OctahedronGeometry(1.2), glow(0xffffff), 0, 16, 0); animProps.push((t) => { gem.rotation.y = t; gem.position.y = 16 + Math.sin(t * 1.5) * 0.6; });
+          r = 90; } break;
+      case 'sky': // floating island with a lightning tower
+        { const isl = new THREE.Group(); grp.add(isl);
+          const rock = mesh(isl, new THREE.ConeGeometry(6, 6, 7), mat(0x8a7a6a), 0, 8, 0); rock.rotation.x = Math.PI;
+          mesh(isl, new THREE.CylinderGeometry(6, 6, 1.2, 7), mat(0x6aae5a), 0, 11.6, 0);
+          part(isl, 1.6, 7, 1.6, mat(0xe8ecf4), 1.5, 15.5, 0); part(isl, 2.4, 0.6, 2.4, mat(0xffd23f), 1.5, 19.2, 0);
+          const orb = mesh(isl, new THREE.OctahedronGeometry(0.9), glow(0xfff066), 1.5, 20.6, 0);
+          for (let i = 0; i < 3; i++) mesh(isl, new THREE.SphereGeometry(1.4 + rnd(), 10, 8), mat(0xffffff), -2.5 + rnd() * 2, 12.5 + rnd(), (rnd() - 0.5) * 4);
+          P(1, 7, 1, mat(0xc8d0dc), 0, 3.5, 0, { shadow: false });
+          animProps.push((t) => { isl.position.y = Math.sin(t * 0.8) * 0.8; orb.rotation.y = t * 3; orb.scale.setScalar(1 + (Math.sin(t * 13) > 0.85 ? 0.6 : 0)); });
+          r = 60; } break;
+      case 'fungal': // giant mushroom
+        { M(new THREE.CylinderGeometry(1.4, 2.2, 11, 12), mat(0xe8dcc8), 0, 5.5, 0);
+          const cap = M(new THREE.SphereGeometry(7, 20, 10, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xd8304a), 0, 10.5, 0); cap.scale.y = 0.6;
+          M(new THREE.CylinderGeometry(6.8, 6.8, 0.3, 20), mat(0xf4e8d8), 0, 10.5, 0);
+          for (let i = 0; i < 9; i++) { const a = rnd() * 6.28, rr = 2 + rnd() * 4; M(new THREE.SphereGeometry(0.6 + rnd() * 0.4, 8, 6), mat(0xffffff), Math.cos(a) * rr, 10.6 + Math.sqrt(Math.max(0, 49 - rr * rr)) * 0.6 - 0.3, Math.sin(a) * rr); }
+          for (let i = 0; i < 6; i++) { const s = M(new THREE.SphereGeometry(0.25, 6, 4), glow(0x9cff3c), 0, 0, 0); const ph = rnd() * 6; animProps.push((t) => { const k = (t * 0.2 + ph) % 1; s.position.set(Math.cos(ph * 3) * 5 * k, 9 - k * 8, Math.sin(ph * 3) * 5 * k); }); }
+          r = 80; } break;
+      case 'olympus': // greek temple
+        { const marble = mat(0xf4f0e6), gold = mat(0xffd23f);
+          P(14, 1, 10, marble, 0, 0.5, 0); P(13, 0.6, 9, marble, 0, 1.3, 0);
+          for (let i = 0; i < 5; i++) for (const zz of [-3.6, 3.6]) M(new THREE.CylinderGeometry(0.55, 0.6, 7, 12), marble, -5 + i * 2.5, 5.1, zz);
+          P(13.5, 0.8, 9.5, marble, 0, 9, 0); P(13.5, 0.3, 9.5, gold, 0, 9.5, 0);
+          { const roof = M(new THREE.CylinderGeometry(0.01, 5.2, 13.5, 3), marble, 0, 11.2, 0); roof.rotation.z = Math.PI / 2; roof.scale.set(1, 1, 0.5); }
+          const fire = P(1, 1.4, 1, glow(0xffb52e), 0, 2.4, 0, { shadow: false }); animProps.push((t) => (fire.scale.y = 1 + Math.sin(t * 9) * 0.3));
+          r = 150; } break;
+      case 'underworld': // gates of Hades with soul fire
+        { const bone = mat(0xe8e0c8), dark = mat(0x1a1218);
+          P(2, 12, 2, dark, -5, 6, 0); P(2, 12, 2, dark, 5, 6, 0); P(13, 2, 2.4, dark, 0, 12.5, 0);
+          M(new THREE.SphereGeometry(1.6, 10, 8), bone, 0, 14.6, 0); P(0.5, 0.5, 0.2, glow(0x66ff99), -0.5, 14.8, 1.4); P(0.5, 0.5, 0.2, glow(0x66ff99), 0.5, 14.8, 1.4);
+          for (const sx of [-5, 5]) { const f = M(new THREE.ConeGeometry(0.9, 2.5, 8), glow(0x66ff99), sx, 13.6, 0); animProps.push((t) => (f.scale.set(1 + Math.sin(t * 7 + sx) * 0.15, 1 + Math.sin(t * 11 + sx) * 0.3, 1))); }
+          for (let i = 0; i < 6; i++) C2(0.3, 3, bone, -4 + i * 1.6, 3.5, 0);
+          r = 120; } break;
+      case 'fairy': // great glowing fae tree
+        { P(2.4, 12, 2.4, mat(0x6a4a5a), 0, 6, 0);
+          for (let i = 0; i < 5; i++) { const s = M(new THREE.SphereGeometry(3.4 + rnd() * 1.6, 14, 10), mat(i % 2 ? 0xff9ae0 : 0xd88aff, 0.25), (rnd() - 0.5) * 6, 12 + rnd() * 4, (rnd() - 0.5) * 6); s.scale.y = 0.75; }
+          const flies = new THREE.Group(); flies.position.y = 9; grp.add(flies);
+          for (let i = 0; i < 12; i++) mesh(flies, new THREE.SphereGeometry(0.2, 6, 4), glow(0xffe066), Math.cos(i) * (5 + (i % 3)), Math.sin(i * 2.3) * 3, Math.sin(i) * (5 + (i % 3)));
+          animProps.push((t) => { flies.rotation.y = t * 0.4; flies.position.y = 9 + Math.sin(t) * 0.8; });
+          r = 75; } break;
+      case 'shadow': // obsidian spire with a watching eye
+        { M(new THREE.ConeGeometry(4, 20, 6), mat(0x0c0a12), 0, 10, 0);
+          for (let i = 0; i < 4; i++) { const sp = M(new THREE.ConeGeometry(1.2, 8, 5), mat(0x15101e), Math.cos(i * 1.57) * 3.5, 3, Math.sin(i * 1.57) * 3.5); sp.rotation.z = Math.cos(i * 1.57) * -0.4; sp.rotation.x = Math.sin(i * 1.57) * 0.4; }
+          const eye = new THREE.Group(); eye.position.y = 14; grp.add(eye);
+          mesh(eye, new THREE.SphereGeometry(1.5, 16, 12), glow(0xb000ff), 0, 0, 0); mesh(eye, new THREE.SphereGeometry(0.7, 12, 8), glow(0xff2aff), 0, 0, 1.1);
+          const ring = new THREE.Mesh(new THREE.TorusGeometry(2.6, 0.12, 6, 32), glow(0xb000ff)); eye.add(ring);
+          animProps.push((t) => { eye.rotation.y = Math.sin(t * 0.5) * 1.2; ring.rotation.x = t; ring.rotation.y = t * 0.6; });
+          r = 85; } break;
+      case 'blossom':
+        if (rnd() < 0.55) { // giant cherry tree shedding petals
+          const bark = mat(0x5a3a2e);
+          M(new THREE.CylinderGeometry(1.2, 2, 10, 10), bark, 0, 5, 0);
+          for (const [a, l] of [[0.6, 6], [-0.7, 5], [2.4, 5.5]]) { const br = P(1, l, 1, bark, Math.cos(a) * 2, 10, Math.sin(a) * 2); br.rotation.z = -Math.cos(a) * 0.7; br.rotation.x = Math.sin(a) * 0.7; }
+          for (let i = 0; i < 8; i++) { const s = M(new THREE.SphereGeometry(2.6 + rnd() * 1.6, 14, 10), mat(i % 3 ? 0xffb7d5 : 0xff9ac4, 0.12), (rnd() - 0.5) * 9, 12 + rnd() * 4, (rnd() - 0.5) * 9); s.scale.y = 0.75; }
+          const petals = [];
+          for (let i = 0; i < 10; i++) petals.push(P(0.3, 0.05, 0.3, mat(0xffc8dc, 0.3), 0, 0, 0, { shadow: false }));
+          animProps.push((t) => petals.forEach((p, i) => { const k = (t * 0.12 + i / 10) % 1; p.position.set(Math.sin(i * 2.3) * 6 + Math.sin(t + i) * k * 2, 13 - k * 13, Math.cos(i * 2.3) * 6); p.rotation.set(t * 2 + i, t + i, 0); }));
+          r = 80;
+        } else { // torii gate with stone lanterns
+          const red = mat(0xd8303a), dark = mat(0x2a1a1a), stone = mat(0xb8b0a8);
+          P(1.1, 10, 1.1, red, -4, 5, 0); P(1.1, 10, 1.1, red, 4, 5, 0);
+          P(12, 0.9, 1.4, dark, 0, 10.2, 0); P(10.5, 0.6, 1, red, 0, 8.3, 0); P(0.6, 1.9, 0.6, red, 0, 9.2, 0);
+          for (const x of [-7, 7]) {
+            P(1.4, 0.4, 1.4, stone, x, 0.2, 0); P(0.6, 2.2, 0.6, stone, x, 1.5, 0); P(1.6, 0.4, 1.6, stone, x, 2.8, 0);
+            const l = P(0.9, 0.9, 0.9, glow(0xffd8a0), x, 3.45, 0, { shadow: false }); P(1.8, 0.4, 1.8, stone, x, 4.1, 0);
+            animProps.push((t) => l.scale.setScalar(1 + Math.sin(t * 3 + x) * 0.06));
+          }
+          r = 110;
+        }
+        break;
+      case 'heaven': // golden gate under a halo
+        { const gold = mat(0xffd23f, 0.2), white = mat(0xffffff);
+          M(new THREE.CylinderGeometry(7, 7.5, 1.2, 20), white, 0, 0.6, 0);
+          P(1.6, 11, 1.6, gold, -4.5, 6.5, 0); P(1.6, 11, 1.6, gold, 4.5, 6.5, 0);
+          const arch = new THREE.Mesh(new THREE.TorusGeometry(4.5, 0.6, 8, 24, Math.PI), gold); arch.position.y = 12; grp.add(arch); arch.castShadow = true;
+          for (let i = -3; i <= 3; i++) P(0.2, 9, 0.2, gold, i * 1.1, 5.7, 0, { shadow: false });
+          const halo = new THREE.Mesh(new THREE.TorusGeometry(3, 0.25, 8, 32), glow(0xfff2a8)); halo.rotation.x = Math.PI / 2; halo.position.y = 19; grp.add(halo);
+          animProps.push((t) => { halo.position.y = 19 + Math.sin(t * 1.3) * 0.7; halo.rotation.z = t * 0.5; });
+          r = 110; } break;
     }
     addCollider(x, y, r);
     occluders.push({ grp, x: x * U, z: y * U, r: r * U, faded: false });
@@ -657,6 +877,63 @@
       case 'cosmic':
         if (v < 0.5) { const col = v < 0.25 ? 0x33ffff : 0xb46cff; for (let i = 0; i < 3; i++) { const c = M(new THREE.OctahedronGeometry(0.8), mat(col, 0.6), i - 1, 1.6 + i * 0.6, (i % 2) * 0.5); c.scale.set(1, 2.5 + i, 1); c.rotation.z = (i - 1) * 0.3; } }
         else { const by = 3 + v * 4, r = M(new THREE.DodecahedronGeometry(1.2), mat(0x3a2f5a), 0, by, 0); animProps.push((t) => { r.position.y = by + Math.sin(t + x) * 0.6; r.rotation.y = t * 0.3; }); }
+        break;
+      case 'crystal':
+        if (v < 0.5) { const col = [0xff66ee, 0x9af4ff, 0xb46cff][Math.floor(v * 6)]; for (let i = 0; i < 4; i++) { const c = M(new THREE.OctahedronGeometry(0.6), mat(col, 0.55), (i - 1.5) * 0.6, 1.2 + (i % 2) * 0.6, (i % 2) * 0.4); c.scale.set(1, 2.4 + i * 0.5, 1); c.rotation.z = (i - 1.5) * 0.3; } }
+        else if (v < 0.8) { for (let i = 0; i < 3; i++) M(new THREE.ConeGeometry(0.7 - i * 0.1, 3.5 + i * 1.2, 6), mat(0x3a3452), i - 1, (3.5 + i * 1.2) / 2, (i % 2) * 0.5); }
+        else { M(new THREE.DodecahedronGeometry(1.3), mat(0x4a4266), 0, 0.7, 0); M(new THREE.OctahedronGeometry(0.5), glow(0x9af4ff), 0, 1.5, 0.8); }
+        break;
+      case 'sky':
+        if (v < 0.5) { const cl = new THREE.Group(); grp.add(cl); for (let i = 0; i < 4; i++) mesh(cl, new THREE.SphereGeometry(1.2 + (i % 2) * 0.5, 10, 8), mat(0xffffff), (i - 1.5) * 1.3, 1 + (i % 2) * 0.4, (i % 2) * 0.6); animProps.push((t) => (cl.position.y = Math.sin(t * 0.9 + x) * 0.3)); }
+        else if (v < 0.8) { M(new THREE.CylinderGeometry(0.5, 0.6, 4 + v * 3, 10), mat(0xe8ecf4), 0, 2 + v * 1.5, 0); P(1.6, 0.4, 1.6, mat(0xffd23f), 0, 4.2 + v * 3, 0); }
+        else { const by = 3 + v * 3, rk = M(new THREE.DodecahedronGeometry(1.1), mat(0x8a7a6a), 0, by, 0); animProps.push((t) => { rk.position.y = by + Math.sin(t * 1.2 + x) * 0.5; rk.rotation.y = t * 0.4; }); }
+        break;
+      case 'fungal':
+        if (v < 0.6) { const h = 1.5 + v * 5, col = [0xd8304a, 0xff9a3c, 0x9a4aff, 0x33aaff][Math.floor(v * 6.6)], gl = v < 0.3 ? 0.4 : 0;
+          M(new THREE.CylinderGeometry(0.3, 0.45, h, 8), mat(0xe8dcc8), 0, h / 2, 0);
+          const cap = M(new THREE.SphereGeometry(1.2 + v * 1.4, 12, 6, 0, Math.PI * 2, 0, Math.PI / 2), mat(col, gl), 0, h, 0); cap.scale.y = 0.65; }
+        else if (v < 0.85) { for (let i = 0; i < 5; i++) { const a = (i / 5) * 6.28; M(new THREE.CylinderGeometry(0.1, 0.15, 0.7, 6), mat(0xe8dcc8), Math.cos(a) * 1.4, 0.35, Math.sin(a) * 1.4); M(new THREE.SphereGeometry(0.35, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), glow(0x9cff3c), Math.cos(a) * 1.4, 0.7, Math.sin(a) * 1.4); } }
+        else { M(new THREE.DodecahedronGeometry(1.1), mat(0x5a4a5a), 0, 0.6, 0); P(1.4, 0.2, 1.4, mat(0x6a9a3a), 0, 1.3, 0); }
+        break;
+      case 'olympus':
+        if (v < 0.45) { const h = 2 + v * 8; M(new THREE.CylinderGeometry(0.6, 0.65, h, 12), mat(0xf4f0e6), 0, h / 2 + 0.3, 0); P(1.8, 0.6, 1.8, mat(0xf4f0e6), 0, 0.3, 0); if (v > 0.2) P(1.8, 0.5, 1.8, mat(0xf4f0e6), 0, h + 0.55, 0); }
+        else if (v < 0.75) { P(0.6, 3.5, 0.6, mat(0x6a5a3a), 0, 1.75, 0); for (let i = 0; i < 3; i++) M(new THREE.SphereGeometry(1.2 - i * 0.2, 10, 8), mat(0x7a8a4a), (i - 1) * 0.8, 4 + i * 0.4, (i % 2) * 0.5); }
+        else { M(new THREE.CylinderGeometry(0.4, 0.7, 1.4, 10), mat(0xffb52e, 0.15), 0, 0.7, 0); M(new THREE.SphereGeometry(0.75, 10, 8), mat(0xffb52e, 0.15), 0, 1.6, 0); M(new THREE.CylinderGeometry(0.35, 0.3, 0.6, 10), mat(0xffb52e, 0.15), 0, 2.4, 0); }
+        break;
+      case 'underworld':
+        if (v < 0.35) { P(1.4, 2, 0.4, mat(0x4a4248), 0, 1, 0); M(new THREE.CylinderGeometry(0.7, 0.7, 0.4, 12), mat(0x4a4248), 0, 2, 0).rotation.x = Math.PI / 2; }
+        else if (v < 0.6) { for (let i = 0; i < 4; i++) P(0.25, 1.8, 0.25, mat(0xe8e0c8), (i - 1.5) * 0.4, 0.3, (i % 2) * 0.4, { rz: 1.2 + i * 0.4 }); M(new THREE.SphereGeometry(0.5, 8, 6), mat(0xe8e0c8), 0.6, 0.5, 0.2); }
+        else if (v < 0.8) { P(0.6, 1, 0.6, mat(0x2a2028), 0, 0.5, 0); const f = M(new THREE.ConeGeometry(0.5, 1.6, 8), glow(0x66ff99), 0, 1.8, 0); animProps.push((t) => f.scale.set(1, 1 + Math.sin(t * 10 + x) * 0.3, 1)); }
+        else { P(0.7, 6, 0.7, mat(0x1a1218), 0, 3, 0); P(3, 0.4, 0.4, mat(0x1a1218), 0.8, 4.5, 0, { rz: 0.5 }); P(0.4, 0.4, 2.2, mat(0x1a1218), 0, 5.2, -0.6, { rx: 0.5 }); }
+        break;
+      case 'fairy':
+        if (v < 0.5) { const col = [0xff66cc, 0xffe066, 0x9a7bff, 0x66ddff][Math.floor(v * 8)]; for (let i = 0; i < 3; i++) { const h = 1 + i * 0.5; M(new THREE.CylinderGeometry(0.06, 0.08, h, 5), mat(0x3a8a4a), (i - 1) * 0.6, h / 2, (i % 2) * 0.4); const fl = M(new THREE.OctahedronGeometry(0.4), mat(col, 0.4), (i - 1) * 0.6, h + 0.2, (i % 2) * 0.4); fl.scale.y = 0.5; } }
+        else if (v < 0.75) { for (let i = 0; i < 6; i++) { const a = (i / 6) * 6.28; M(new THREE.CylinderGeometry(0.12, 0.16, 0.6, 6), mat(0xf4e8d8), Math.cos(a) * 1.5, 0.3, Math.sin(a) * 1.5); M(new THREE.SphereGeometry(0.4, 8, 4, 0, Math.PI * 2, 0, Math.PI / 2), mat(0xff4a6a), Math.cos(a) * 1.5, 0.6, Math.sin(a) * 1.5); } }
+        else { P(0.9, 5, 0.9, mat(0x6a4a5a), 0, 2.5, 0); const cn = M(new THREE.SphereGeometry(2.2, 12, 8), mat(0xd88aff, 0.2), 0, 5.6, 0); cn.scale.y = 0.75; }
+        break;
+      case 'shadow':
+        if (v < 0.45) { for (let i = 0; i < 3; i++) { const c = M(new THREE.ConeGeometry(0.5, 3 + i * 1.4, 5), mat(0x0c0a12), i - 1, (3 + i * 1.4) / 2, (i % 2) * 0.5); c.rotation.z = (i - 1) * 0.2; } P(0.25, 0.25, 0.25, glow(0xb000ff), 0, 0.3, 0.8, { shadow: false }); }
+        else if (v < 0.75) { const by = 2 + v * 3, o = M(new THREE.SphereGeometry(0.7, 12, 8), glow(0xb000ff), 0, by, 0); animProps.push((t) => { o.position.y = by + Math.sin(t * 1.8 + x) * 0.5; o.scale.setScalar(1 + Math.sin(t * 3 + x) * 0.15); }); }
+        else { M(new THREE.DodecahedronGeometry(1.3), mat(0x15101e), 0, 0.7, 0); const f = M(new THREE.ConeGeometry(0.4, 1.4, 6), glow(0xff2aff), 0, 1.9, 0); animProps.push((t) => f.scale.set(1, 1 + Math.sin(t * 9 + x) * 0.3, 1)); }
+        break;
+      case 'blossom':
+        if (v < 0.5) { // young cherry tree
+          P(0.6, 4, 0.6, mat(0x5a3a2e), 0, 2, 0);
+          for (let i = 0; i < 3; i++) { const s = M(new THREE.SphereGeometry(1.5 - i * 0.2, 10, 8), mat(i ? 0xffb7d5 : 0xff9ac4, 0.1), (i - 1) * 0.9, 4.6 + (i % 2) * 0.5, (i % 2) * 0.6); s.scale.y = 0.8; }
+        } else if (v < 0.7) { // stone lantern
+          const st = mat(0xb8b0a8);
+          P(1, 0.3, 1, st, 0, 0.15, 0); P(0.4, 1.4, 0.4, st, 0, 1, 0); P(1.1, 0.3, 1.1, st, 0, 1.85, 0);
+          P(0.6, 0.6, 0.6, glow(0xffd8a0), 0, 2.3, 0); M(new THREE.ConeGeometry(0.9, 0.6, 4), st, 0, 2.9, 0).rotation.y = Math.PI / 4;
+        } else if (v < 0.88) { // azalea bush
+          for (let i = 0; i < 3; i++) M(new THREE.SphereGeometry(0.8, 8, 6), mat(i ? 0xff7ab0 : 0x5a9a4a), (i - 1) * 0.7, 0.6, (i % 2) * 0.4);
+        } else { // fallen petals
+          for (let i = 0; i < 6; i++) P(0.3, 0.04, 0.3, mat(0xffc8dc), (rnd() - 0.5) * 3, 0.03, (rnd() - 0.5) * 3, { ry: rnd() * 3, shadow: false });
+        }
+        break;
+      case 'heaven':
+        if (v < 0.45) { const cl = new THREE.Group(); grp.add(cl); for (let i = 0; i < 4; i++) mesh(cl, new THREE.SphereGeometry(1.1 + (i % 2) * 0.5, 10, 8), mat(i % 2 ? 0xfff4d0 : 0xffffff), (i - 1.5) * 1.2, 0.8 + (i % 2) * 0.4, (i % 2) * 0.6); animProps.push((t) => (cl.position.y = Math.sin(t * 0.8 + x) * 0.25)); }
+        else if (v < 0.75) { const h = 4 + v * 4; M(new THREE.CylinderGeometry(0.5, 0.5, h, 12), mat(0xffffff), 0, h / 2, 0); P(1.4, 0.4, 1.4, mat(0xffd23f, 0.2), 0, h + 0.2, 0); const o = M(new THREE.OctahedronGeometry(0.5), glow(0xfff2a8), 0, h + 1.2, 0); animProps.push((t) => (o.rotation.y = t * 2)); }
+        else { const hl = new THREE.Mesh(new THREE.TorusGeometry(0.9, 0.1, 6, 20), glow(0xffd700)); hl.position.y = 2.5; grp.add(hl); animProps.push((t) => { hl.rotation.x = t; hl.position.y = 2.5 + Math.sin(t * 2 + x) * 0.4; }); }
         break;
     }
     const box = new THREE.Box3().setFromObject(grp), size = box.getSize(new THREE.Vector3());
@@ -719,17 +996,28 @@
         mesh(g, new THREE.SphereGeometry(2 + rnd() * 4, 12, 8), mat([0x7a5cff, 0x33aaff, 0xff66cc][i % 3], 0.3), x, 14 + rnd() * 12, z + (back ? -12 : 12));
         continue;
       }
+      if (Z.deco === 'sky' || Z.deco === 'heaven') { // cloud banks instead of mountains
+        for (let k = 0; k < 4; k++) mesh(g, new THREE.SphereGeometry(4 + rnd() * 4, 12, 8), mat(Z.deco === 'heaven' && k % 2 ? 0xfff0c8 : 0xffffff), x + (k - 1.5) * 5, 2 + rnd() * 6, z + (back ? -4 : 4)).castShadow = false;
+        continue;
+      }
+      if (Z.deco === 'crystal' && i % 3 === 0) {
+        const c = mesh(g, new THREE.OctahedronGeometry(4), mat([0xff66ee, 0x9af4ff, 0xb46cff][i % 3 === 0 ? (i / 3) % 3 : 0], 0.5), x, 10 + rnd() * 6, z + (back ? -6 : 6));
+        c.scale.set(1, 3, 1); continue;
+      }
       const col = new THREE.Color(Z.edge).lerp(new THREE.Color(Z.sky), 0.35);
       part(g, w, h, 8, new THREE.MeshLambertMaterial({ color: col }), x, h / 2 - 1, z, { shadow: false, ry: (rnd() - 0.5) * 0.5 });
       if (Z.deco === 'snow') part(g, w + 0.2, 2, 8.2, mat(0xffffff), x, h - 1.5, z, { shadow: false });
     }
-    if (Z.deco === 'cosmic' || Z.deco === 'abyss') {
+    if (Z.deco === 'cosmic' || Z.deco === 'abyss' || Z.deco === 'shadow' || Z.deco === 'fairy' || Z.deco === 'heaven' || Z.deco === 'blossom') {
       const n = 500, pos = new Float32Array(n * 3);
       for (let i = 0; i < n; i++) { pos[i * 3] = x0 + rnd() * W; pos[i * 3 + 1] = 2 + rnd() * 40; pos[i * 3 + 2] = -30 + rnd() * (DEPTH + 60); }
       const geo = new THREE.BufferGeometry(); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3));
-      const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color: Z.deco === 'cosmic' ? 0xffffff : 0x88ddff, size: Z.deco === 'cosmic' ? 0.35 : 0.25, transparent: true, opacity: 0.8 }));
+      const pc = { cosmic: 0xffffff, abyss: 0x88ddff, shadow: 0xb000ff, fairy: 0xffe066, heaven: 0xfff2a8, blossom: 0xffb7d5 }[Z.deco];
+      const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color: pc, size: Z.deco === 'abyss' ? 0.25 : 0.35, transparent: true, opacity: 0.8 }));
       g.add(pts);
-      if (Z.deco === 'abyss') animProps.push((t) => (pts.position.y = (t * 1.5) % 10));
+      if (Z.deco === 'abyss' || Z.deco === 'heaven') animProps.push((t) => (pts.position.y = (t * 1.5) % 10));
+      if (Z.deco === 'fairy' || Z.deco === 'shadow') animProps.push((t) => (pts.position.y = Math.sin(t * 0.6) * 2));
+      if (Z.deco === 'blossom') animProps.push((t) => { pts.position.y = -((t * 1.2) % 10); pts.position.x = Math.sin(t * 0.4) * 3; });
     }
   }
 
@@ -744,7 +1032,7 @@
     m.rotation.y = Math.PI / 2; m.position.set(x, 7, DEPTH / 2); scene.add(m);
     part(scene, 1.2, 14, 1.2, mat(0x30343c), x, 7, 0.5);
     const labs = [-1, 1].map((side) => {
-      const lab = makeLabel(`LOCKED: ${Z.name}\nNeed ${fmt(Z.req)} speed`, { size: 52, h: 1.3, color: '#ff6a7a', color2: '#ffffff', bg: 'rgba(20,0,8,.6)' });
+      const lab = makeLabel(`LOCKED: ${Z.name}\nNeed ${fmt(Z.req)} speed${Z.final ? '\n★ FINAL LEVEL ★' : ''}`, { size: 52, h: 1.3, color: '#ff6a7a', color2: '#ffffff', bg: 'rgba(20,0,8,.6)' });
       lab.position.set(x - 0.5, 5, SPAWN.y * U + side * 16); scene.add(lab); return lab;
     });
     return { m, labs };
@@ -806,7 +1094,7 @@
   function trailGradient(T2, k, t) {
     const c = T2.c, f = Math.min(0.999, k) * (c.length - 1), i = Math.floor(f);
     trailColor.set(c[i]).lerp(trailC2.set(c[i + 1]), f - i);
-    if (T2.n === 'Galaxy Trail') trailColor.offsetHSL(Math.sin(t * 2 + k * 4) * 0.08, 0, 0);
+    if (T2.n === 'Galaxy Trail' || T2.n === 'Omega Trail') trailColor.offsetHSL(Math.sin(t * 2 + k * 4) * 0.08, 0, 0);
     return trailColor;
   }
   function updateTrail(t) {
@@ -856,7 +1144,7 @@
     });
     const way = L.way, home = L.home;
     const model = Models.build(Z.guard.spec);
-    const targetH = 10 + z * 0.5;
+    const targetH = Z.final ? 22 : 10 + z * 0.5;
     model.scale.setScalar(targetH / model.userData.height);
     const g = new THREE.Group(); g.add(model); g.position.set(home.x * U, 0, home.y * U); scene.add(g);
     const label = makeLabel(Z.guard.n, { size: 48, h: 1.0, color: '#ff8a8a', depthTest: false }); label.position.y = targetH + 1.6; g.add(label);
@@ -884,8 +1172,19 @@
     faceM.position.set(0, 4.65, 0.63); body.add(faceM);
     g.scale.setScalar(0.85);
     scene.add(g);
-    return { g, body, legs, arms };
+    return { g, body, legs, arms, alt: null };
   })();
+  // Imported characters have no skeleton, so they hop, lean and waddle instead of swinging limbs.
+  function setCharacter(id) {
+    const C = CHARACTERS.find((c) => c.id === id) || CHARACTERS[0];
+    if (avatar.alt) { avatar.g.remove(avatar.alt); avatar.alt = null; }
+    avatar.body.visible = !C.model;
+    if (!C.model) return;
+    const m = Models.build(C.spec);
+    m.scale.setScalar(5.4 / m.userData.height); // about as tall as the classic avatar
+    const pivot = new THREE.Group(); pivot.add(m); avatar.g.add(pivot);
+    avatar.alt = pivot;
+  }
   let carryEgg = null;
 
   // ---------------- Effects ----------------
@@ -1017,7 +1316,7 @@
   $('bReset').onclick = (e) => {
     const r = e.currentTarget;
     if (!r.dataset.armed) { r.dataset.armed = '1'; r.textContent = 'Are you sure? Click again to erase everything'; return; }
-    S = fresh(); hasSave = false; save(); player.carrying = null; buildMenu();
+    S = fresh(); hasSave = false; save(); player.carrying = null; setCharacter(S.character); buildMenu();
   };
   function startGame(level) {
     if (hasSave && S.level !== level) toast(`Math level changed to ${MathGen.LEVELS[level].name}`, 'gold');
@@ -1033,7 +1332,7 @@
   // ---------------- Shop ----------------
   function renderShop() {
     const items = [
-      { ic: '🏃', name: `Treadmill level ${S.treadLvl + 1}`, desc: `Train faster: ${treadGain(S.treadLvl)} → ${treadGain(S.treadLvl + 1)} speed/s while standing on it`, cost: treadCost(S.treadLvl),
+      { ic: '🏃', name: `Treadmill level ${S.treadLvl + 1}`, desc: `Train faster: ${fmtD(treadGain(S.treadLvl))} → ${fmtD(treadGain(S.treadLvl + 1))} speed/s while standing on it`, cost: treadCost(S.treadLvl),
         buy: () => { S.treadLvl++; } },
       S.slotsUnlocked < MAX_SLOTS
         ? { ic: '🧱', name: `Base plot #${S.slotsUnlocked + 1}`, desc: 'Room for one more creature', cost: slotCost(S.slotsUnlocked), buy: () => { S.slotsUnlocked++; } }
@@ -1052,7 +1351,7 @@
       row.appendChild(b); box.appendChild(row);
     });
     const tr = document.createElement('div'); tr.className = 'shop-item';
-    tr.innerHTML = `<div class="ic">✨</div><div class="tx"><b>Trails</b><small>Run up to ×2.9 faster. Also sold at the glowing TRAILS SHOP circle in your base.</small></div>`;
+    tr.innerHTML = `<div class="ic">✨</div><div class="tx"><b>Trails</b><small>Run up to ×${TRAILS[TRAILS.length - 1].mult} faster. Also sold at the glowing TRAILS SHOP circle in your base.</small></div>`;
     const tb = document.createElement('button'); tb.className = 'primary'; tb.textContent = 'OPEN';
     tb.onclick = () => { $('shop').hidden = true; openTrails(); };
     tr.appendChild(tb); box.appendChild(tr);
@@ -1094,6 +1393,22 @@
       row.append(sw, tx, b); box.appendChild(row);
     });
   }
+  // ---------------- Characters ----------------
+  function renderChars() {
+    const box = $('charItems'); box.innerHTML = '';
+    CHARACTERS.forEach((C) => {
+      const on = S.character === C.id;
+      const card = document.createElement('button'); card.className = 'char-card' + (on ? ' on' : '');
+      const im = new Image(); im.alt = ''; im.src = Models.portrait(C.spec, 'char:' + C.id);
+      const nm = document.createElement('b'); nm.textContent = C.n;
+      const ds = document.createElement('small'); ds.textContent = on ? '✔ Playing' : C.desc;
+      card.append(im, nm, ds);
+      card.onclick = () => { if (on) return; S.character = C.id; setCharacter(C.id); sfx.equip(); toast(`You are now playing as ${C.n}!`, 'gold'); save(); renderChars(); };
+      box.appendChild(card);
+    });
+  }
+  $('bChar').onclick = () => { paused = true; keys.clear(); renderChars(); $('charPick').hidden = false; };
+
   function openTrails() { paused = true; keys.clear(); renderTrails(); $('trailShop').hidden = false; }
 
   // ---------------- Index ----------------
@@ -1326,25 +1641,91 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
     guardians[zone].mode = 'return';
     let idx = -1;
     for (let i = 0; i < S.slotsUnlocked; i++) if (!S.slots[i]) { idx = i; break; }
-    const val = income(zone, rarity);
-    if (idx < 0) {
-      let worst = -1, wv = Infinity;
-      for (let i = 0; i < S.slotsUnlocked; i++) { const s = S.slots[i], v = income(s.zone, s.rarity); if (v < wv) { wv = v; worst = i; } }
-      if (worst >= 0 && wv < val) {
-        S.money += wv * 20; idx = worst;
-        toast(`Base full! Sold a weaker creature for $${fmt(wv * 20)} to make room.`, 'gold');
-      } else {
-        S.money += val * 20;
-        toast(`Base full! Sold the egg for $${fmt(val * 20)}. Buy more plots in the Shop.`, 'gold');
-        sfx.buy(); save(); return;
-      }
-    }
+    if (idx < 0) { openBaseFull({ zone, rarity }); return; } // the player chooses what to sell
+    putEgg(idx, zone, rarity);
+  }
+  function putEgg(idx, zone, rarity) {
     S.slots[idx] = { zone, rarity, hatch: RARITIES[rarity].hatch };
     const p = slotPos(idx);
     burst(p.x + p.w / 2, p.y + p.h / 2, RARITIES[rarity].hex, 18, 1.5);
     sfx.place();
     toast(`Egg placed! Hatching in ${RARITIES[rarity].hatch}s…`, 'good');
     save();
+  }
+
+  // ---------------- Selling ----------------
+  // A creature (or an egg) sells for 20 seconds of its income.
+  const sellPrice = (s) => income(s.zone, s.rarity) * 20;
+  const slotName = (s) => (s.hatch > 0 ? `${RARITIES[s.rarity].name} egg` : `${RARITIES[s.rarity].name} ${ZONES[s.zone].pets[s.rarity].n}`);
+  // The plot (with something on it) you're standing on or next to.
+  function slotNear(x, y, m = 40) {
+    if (x > GARDEN_W) return -1;
+    for (let i = 0; i < S.slotsUnlocked; i++) {
+      const p = slotPos(i);
+      if (S.slots[i] && x > p.x - m && x < p.x + p.w + m && y > p.y - m && y < p.y + p.h + m) return i;
+    }
+    return -1;
+  }
+  function sellSlot(i) {
+    const s = S.slots[i]; if (!s) return 0;
+    const price = sellPrice(s), p = slotPos(i);
+    S.money += price; S.slots[i] = null;
+    burst(p.x + p.w / 2, p.y + p.h / 2, 0x7dff7d, 16, 2);
+    floater(p.x + p.w / 2, p.y + p.h / 2, '+$' + fmt(price), '#7dff7d', 1.2, 6);
+    sfx.buy(); sfx.cash();
+    return price;
+  }
+  // A row for the sell dialogs: portrait (or an egg), name, income and a SELL button.
+  function sellRow(s, label, onSell) {
+    const R = RARITIES[s.rarity], row = document.createElement('div'); row.className = 'shop-item sell';
+    const ic = document.createElement('div'); ic.className = 'ic';
+    if (s.hatch > 0 || s.egg) { ic.textContent = '🥚'; ic.style.filter = `drop-shadow(0 0 6px ${R.color})`; }
+    else { const im = new Image(); im.alt = ''; im.src = petPortrait(s.zone, s.rarity); ic.appendChild(im); }
+    const tx = document.createElement('div'); tx.className = 'tx';
+    const nm = document.createElement('b'); nm.textContent = label; nm.style.color = R.color;
+    const sm = document.createElement('small'); sm.textContent = `${ZONES[s.zone].name} · earns $${fmt(income(s.zone, s.rarity))}/s` + (s.hatch > 0 || s.egg ? ' once hatched' : '');
+    tx.append(nm, sm);
+    const b = document.createElement('button'); b.className = 'primary'; b.textContent = `SELL $${fmt(sellPrice(s))}`;
+    b.onclick = onSell;
+    row.append(ic, tx, b); return row;
+  }
+  // Selling one creature from its plot.
+  let sellIdx = -1;
+  function openSell(i) {
+    const s = S.slots[i]; if (!s) return;
+    sellIdx = i; paused = true; keys.clear();
+    const box = $('sellItem'); box.innerHTML = '';
+    box.appendChild(sellRow(s, slotName(s), () => {
+      if (S.slots[sellIdx] !== s) return;
+      const price = sellSlot(sellIdx);
+      toast(`Sold your ${slotName(s)} for $${fmt(price)}`, 'gold'); save();
+      $('sellOne').hidden = true; paused = false;
+    }));
+    $('sellOne').hidden = false;
+  }
+  // Base full: sell one of your creatures to make room, or sell the egg you just brought.
+  let pendingEgg = null;
+  function openBaseFull(egg) {
+    pendingEgg = egg; paused = true; keys.clear();
+    const box = $('fullItems'); box.innerHTML = '';
+    const R = RARITIES[egg.rarity];
+    $('fullEgg').innerHTML = `You brought a <b style="color:${R.color}">${R.name}</b> egg from ${ZONES[egg.zone].name}, but every plot is taken.`;
+    const done = (msg) => { toast(msg, 'gold'); pendingEgg = null; $('baseFull').hidden = true; paused = false; save(); };
+    box.appendChild(sellRow(Object.assign({ egg: true }, egg), `🆕 The new ${R.name} egg`, () => {
+      if (!pendingEgg) return;
+      const price = sellPrice(egg); S.money += price; sfx.buy(); sfx.cash();
+      done(`Sold the new egg for $${fmt(price)}. Buy more plots in the Shop!`);
+    }));
+    // weakest first, so the obvious pick is on top
+    [...Array(S.slotsUnlocked).keys()].filter((i) => S.slots[i]).sort((a, b) => sellPrice(S.slots[a]) - sellPrice(S.slots[b])).forEach((i) => {
+      const s = S.slots[i];
+      box.appendChild(sellRow(s, slotName(s), () => {
+        if (!pendingEgg || S.slots[i] !== s) return;
+        const price = sellSlot(i); putEgg(i, egg.zone, egg.rarity);
+        done(`Sold your ${slotName(s)} for $${fmt(price)} and placed the new egg.`);
+      }));
+    });
+    $('baseFull').hidden = false;
   }
 
   // ---------------- Input ----------------
@@ -1422,6 +1803,8 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
     const { ped, w } = pick(e);
     const near = ped || (w && nearestEgg(w.x, w.y, 50));
     if (near && Math.hypot(near.x - player.x, near.y - player.y) < 85) { tryInteract(near); return; }
+    const si = w && !player.carrying ? slotNear(w.x, w.y, 0) : -1;
+    if (si >= 0 && si === slotNear(player.x, player.y)) { openSell(si); return; }
     if (w) target = w;
   };
   canvas.addEventListener('pointerup', endPtr);
@@ -1436,6 +1819,7 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
     player.vz = JUMP_V; player.z = 0.01; sfx.jump();
   }
   const jumpBtn = $('jumpBtn');
+  $('prompt').addEventListener('click', () => { if (!paused && $('prompt').classList.contains('tap')) tryInteract(); });
   jumpBtn.addEventListener('pointerdown', (e) => { e.preventDefault(); e.stopPropagation(); jump(); });
 
   function nearestEgg(x, y, maxD) {
@@ -1448,7 +1832,9 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
   function tryInteract(ped) {
     if (player.flying || player.carrying) return;
     ped = ped || nearestEgg(player.x, player.y, 85);
-    if (ped) openQuiz(ped);
+    if (ped) { openQuiz(ped); return; }
+    const i = slotNear(player.x, player.y);
+    if (i >= 0) openSell(i);
   }
 
   // ---------------- Update ----------------
@@ -1504,7 +1890,7 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
     const inShop = !player.flying && !player.carrying && Math.hypot(player.x - TRAIL_SHOP.x, player.y - TRAIL_SHOP.y) < TRAIL_SHOP.r;
     if (inShop && !wasInShop) openTrails();
     wasInShop = inShop;
-    if (onTread) { S.speed += treadGain(S.treadLvl) * dt; if (Math.random() < dt * 2.5) floater(player.x + (Math.random() - 0.5) * 40, player.y, '+' + treadGain(S.treadLvl) + ' speed', '#5ab0ff', 0.7, 5.5); }
+    if (onTread) { S.speed += treadGain(S.treadLvl) * dt; if (Math.random() < dt * 2.5) floater(player.x + (Math.random() - 0.5) * 40, player.y, '+' + fmtD(treadGain(S.treadLvl)) + ' speed', '#5ab0ff', 0.7, 5.5); }
 
     for (const p of pedestals) if (!p.egg && !p.held) { p.respawn -= dt; if (p.respawn <= 0) { p.egg = { rarity: rollEgg(p) }; burst(p.x, p.y, RARITIES[p.egg.rarity].hex, 10, 2.5); } }
 
@@ -1540,8 +1926,10 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
       }
       const air = player.z > 0.6;
       if (len) {
-        const sp = runSpeed() * dt * (player.boost > 0 ? 1.7 : 1);
-        player.x += (dx / len) * sp; player.y += (dy / len) * sp;
+        const sp = runSpeed() * dt * (player.boost > 0 ? 1.7 : 1), n = Math.ceil(sp / 16);
+        // move in small steps so very high speeds can't skip through walls
+        for (let i = 1; i < n; i++) { player.x += (dx / len) * sp / n; player.y += (dy / len) * sp / n; pushOut(player, player.r, player.z > 2.2); }
+        player.x += (dx / len) * sp / n; player.y += (dy / len) * sp / n;
         player.face = Math.atan2(dx, dy);
         // Camera drifts back behind the character while walking forward-ish.
         const diff = angDiff(camYaw, player.face);
@@ -1554,7 +1942,7 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
         if (stepT <= 0) {
           stepT = 0.3;
           const zd = ZONES[zoneAt(player.x)];
-          sfx.step(zd && zd.deco === 'snow' ? 'snow' : zd && zd.deco === 'desert' ? 'sand' : 'grass');
+          sfx.step(zd && (zd.deco === 'snow' || zd.deco === 'sky' || zd.deco === 'heaven') ? 'snow' : zd && zd.deco === 'desert' ? 'sand' : 'grass');
         }
       }
       player.y = Math.max(25, Math.min(WORLD_H - 25, player.y));
@@ -1607,7 +1995,8 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
         g.burstCd -= dt;
         if (g.burstCd <= 0 && d < 520) { g.burst = 0.7; g.burstCd = 3 + Math.random() * 1.5; sfx.growl(); }
         const mult = (g.burst > 0 ? 1.45 : 1) * (d > 600 ? 1.5 : 1);
-        stepGuardian(g, player.x, player.y, guardSpeed(g.zone) * mult * dt, dt);
+        const gs = guardSpeed(g.zone) * mult * dt, gn = Math.ceil(gs / 24);
+        for (let i = 0; i < gn; i++) stepGuardian(g, player.x, player.y, gs / gn, dt / gn);
         g.x = Math.max(leash + 30, g.x);
         if (d < 76) { g.lunge = 0.45; launchHome('CAUGHT!'); }
       } else {
@@ -1751,11 +2140,16 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
       c.textContent = `${RARITIES[player.carrying.rarity].name.toUpperCase()} EGG! RUN BACK TO BASE!  ${g.daze > 0 ? '(guardian is stunned…)' : ZONES[g.zone].guard.n + ' is chasing you!'}`;
     } else c.hidden = true;
     const pr = $('prompt');
+    pr.classList.remove('tap');
     const ped = !player.flying && !player.carrying ? nearestEgg(player.x, player.y, 85) : null;
     if (ped) {
       const R = RARITIES[ped.egg.rarity];
       pr.innerHTML = `${isTouch ? 'Tap the egg' : 'Press <kbd>E</kbd>'} to ${ped.isDrop ? 'grab back the dropped' : 'steal the'} <b style="color:${R.color}">${R.name}</b> egg · <span class="stars">${stars(difficulty(ped.zone, ped.egg.rarity))}</span>`;
       pr.hidden = false;
+    } else if (!player.flying && !player.carrying && slotNear(player.x, player.y) >= 0) {
+      const s = S.slots[slotNear(player.x, player.y)];
+      pr.innerHTML = `${isTouch ? 'Tap here' : 'Press <kbd>E</kbd>'} to sell your <b style="color:${RARITIES[s.rarity].color}">${slotName(s)}</b> for $${fmt(sellPrice(s))}`;
+      pr.hidden = false; pr.classList.add('tap');
     } else if (wasInShop) {
       pr.innerHTML = '✨ TRAILS SHOP · step out and back in to reopen'; pr.hidden = false;
     } else if (onTread) {
@@ -1785,6 +2179,13 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
     const airPose = player.z > 0 && !player.carrying;
     if (airPose) { avatar.arms[0].rotation.x = avatar.arms[1].rotation.x = -2.6; avatar.legs[0].rotation.x = 0.35; avatar.legs[1].rotation.x = -0.2; }
     avatar.arms[0].rotation.z = flying ? -1.2 : airPose ? -0.25 : 0; avatar.arms[1].rotation.z = flying ? 1.2 : airPose ? 0.25 : 0;
+    if (avatar.alt) {
+      const a = avatar.alt, hop = mv ? Math.abs(Math.sin(stride)) : 0;
+      a.position.y = hop * 0.45;
+      a.rotation.x = flying ? flying.spin : mv ? 0.12 + Math.min(0.15, runK * 0.03) : airPose ? -0.15 : 0;
+      a.rotation.z = mv ? Math.sin(stride) * 0.09 : 0;
+      a.scale.set(1, mv ? 1 - (1 - hop) * 0.06 : 1 + Math.sin(t * 2) * 0.012, 1); // squash on landing, breathe when idle
+    }
     if (player.carrying && (!carryEgg || carryEgg.userData.rarity !== player.carrying.rarity)) { if (carryEgg) scene.remove(carryEgg); carryEgg = eggMesh(player.carrying.rarity, 0.8); scene.add(carryEgg); }
     if (!player.carrying && carryEgg) { scene.remove(carryEgg); carryEgg = null; }
     if (carryEgg) { carryEgg.position.set(player.x * U, fh + 6.6 + Math.sin(t * 10) * 0.1, player.y * U); carryEgg.rotation.y = t * 2; }
@@ -1946,6 +2347,6 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
   document.addEventListener('visibilitychange', () => { if (document.hidden) save(); });
   if (location.hash === '#debug') window.dbg = { setYaw: (a, p) => { camYaw = a; if (p !== undefined) camPitch = p; lastOrbit = performance.now() / 1000 + 30; }, player, guardians, pedestals, dropped, isNight, spawnDivine, LAYOUTS, pads, navAt, navTarget, clearLine, get S() { return S; } };
   buildNav();
-  buildMenu();
-  requestAnimationFrame(frame);
+  // Imported models load first so pets and portraits never show the stand-in model.
+  Models.ready.then(() => { setCharacter(S.character); buildMenu(); requestAnimationFrame(frame); });
 })();

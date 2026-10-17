@@ -21,6 +21,7 @@
   <div class="buttons">
     <button id="bShop">🛒 SHOP</button>
     <button id="bIndex">📖 INDEX</button>
+    <button id="bChar" title="Change character">👤</button>
     <button id="bMute" title="Sound">🔊</button>
     <button id="bMenu" title="Menu">☰</button>
   </div>
@@ -89,6 +90,36 @@
   </div>
 </div>
 
+<!-- Sell one creature -->
+<div id="sellOne" class="overlay" hidden>
+  <div class="panel">
+    <h2>💰 SELL?</h2>
+    <p class="sub">Selling pays 20 seconds of this creature's income right away and frees the plot.</p>
+    <div id="sellItem"></div>
+    <button class="close primary ghost">KEEP IT</button>
+  </div>
+</div>
+
+<!-- Base full: choose what to sell -->
+<div id="baseFull" class="overlay" hidden>
+  <div class="panel">
+    <h2>🧱 YOUR BASE IS FULL!</h2>
+    <p class="sub" id="fullEgg"></p>
+    <p class="sub">Sell one of your creatures to make room for it, or sell the new egg.</p>
+    <div id="fullItems"></div>
+  </div>
+</div>
+
+<!-- Character picker -->
+<div id="charPick" class="overlay" hidden>
+  <div class="panel">
+    <h2>👤 CHARACTERS</h2>
+    <p class="sub">Pick who you play as. You can switch any time.</p>
+    <div id="charItems"></div>
+    <button class="close primary">CLOSE</button>
+  </div>
+</div>
+
 <!-- Trails shop -->
 <div id="trailShop" class="overlay" hidden>
   <div class="panel">
@@ -111,6 +142,8 @@
 </div>
 
 <script src="lib/three.min.js"></script>
+<script src="lib/GLTFLoader.js"></script>
+<script src="assets/models.js"></script>
 <script src="math.js"></script>
 <script src="creatures.js"></script>
 <script src="game.js"></script>
