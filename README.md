@@ -58,7 +58,7 @@ The original runs a 5-minute cycle that ends in a short night "reset": eggs rest
 - **4 minutes of day, then 1 minute of night.** The clock is in the HUD. The sky darkens, stars and a moon come out, torches glow, and a lantern lights up around you.
 - **At nightfall** every egg restocks and eggs at your base hatch **3× faster** (30× would hatch everything instantly with these short timers). The field also stays open at night, because a full minute of closed zones would be boring.
 - **Divine eggs spawn only at night.** The chance is 55% at nightfall and 30% at midnight, and the first night always brings one. It appears in a zone you've unlocked. A big **✨ A DIVINE EGG HAS SPAWNED! ✨** banner, a chime and a tracker show which zone it's in and how far away it is. A golden beam of light marks it from across the map.
-- **Divine questions are always the hardest (difficulty 10).** Divine creatures earn 120× income. There are 17 of them, one per zone: Celestial Stag, Seraph Swan, Sun Sphinx, Jade Dragon King, Aurora Wolf, Sovereign Phoenix, Pearl Kraken, Archangel, Prismatic Dragon, Storm Sovereign, Elder Mycelium, Zeus Eagle, Soul Phoenix, Oberon the Fae King, Moonlight Wyrm, The Eternal One and Cheese.
+- **Divine questions are a step up:** two difficulty steps above that zone's Mythic egg. Divine creatures earn 120× income. There are 17 of them, one per zone: Celestial Stag, Seraph Swan, Sun Sphinx, Jade Dragon King, Aurora Wolf, Sovereign Phoenix, Pearl Kraken, Archangel, Prismatic Dragon, Storm Sovereign, Elder Mycelium, Zeus Eagle, Soul Phoenix, Oberon the Fae King, Moonlight Wyrm, The Eternal One and Cheese.
 - **At sunrise** a Divine egg still on its pedestal fades away. One you're carrying, or one dropped outside its zone, is safe.
 
 ## Speed & trails
@@ -130,8 +130,8 @@ Late-game cash runs into the trillions and beyond: a Divine from Elysium earns $
 Steal an egg → carry it to your base → it hatches into a creature that earns cash each second → train speed on the treadmill → unlock deeper zones with rarer eggs and faster guardians.
 
 ## The math twist
-- Pick a level at the start (change it any time from ☰): Seedling (5–7, multiple choice), Explorer (8–10), Adventurer (11–13), Mastermind (14+).
-- Question difficulty (1–10) grows with zone depth + egg rarity, reaching 10 in the deepest zones.
+- Pick your math topics at the start (change them any time from ☰): 3rd to 6th grade, each opening into its sub-topics (from `skills/math.txt`), plus skills for every grade. Questions get harder in deeper biomes and for rarer eggs: bigger numbers, more steps, and more of the harder topics on your list.
+- Question difficulty grows gently with zone depth + egg rarity: 1–2 in the first zone, up to 8 (9 for a Divine egg) in the deepest one.
 - **Right answer:** cash, speed and a streak bonus. You grab the egg; the guardian is stunned briefly, then chases you home.
 - **Wrong answer:** the game shows the correct answer with a worked explanation, then the guardian SMACKS you back to base.
 

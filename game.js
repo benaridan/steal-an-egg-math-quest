@@ -229,7 +229,12 @@
   const zoneAt = (x) => (x < GARDEN_W ? -1 : Math.min(ZONES.length - 1, Math.floor((x - GARDEN_W) / ZONE_W)));
 
   const income = (z, r) => ZONES[z].base * RARITIES[r].mult;
-  const difficulty = (z, r) => (r === DIVINE ? 10 : Math.min(10, 1 + Math.round(((z + r) * 9) / (ZONES.length + 4))));
+  // Question difficulty 1..9 (math.js goes to 10, but this is meant to stay fun): rises gently with zone
+  // depth and egg rarity. A Divine egg is two steps above its zone's Mythic egg.
+  const difficulty = (z, r) => {
+    const lv = (rr) => 1 + Math.floor(((z + rr) * 7) / (ZONES.length + 4));
+    return r === DIVINE ? Math.min(9, lv(DIVINE - 1) + 2) : lv(r);
+  };
   // Speed points -> run speed (px/s). Steeper than before so training is something you can feel.
   const moveSpeed = (s) => 160 + 75 * Math.log10(1 + s);
   // Trails (from the original): bought at the TRAILS SHOP circle in your base, each one multiplies your
@@ -294,7 +299,7 @@
   const DAY_LEN = 240, NIGHT_LEN = 60, CYCLE = DAY_LEN + NIGHT_LEN, NIGHT_HATCH = 3;
   const fresh = () => ({
     clock: 0, nights: 0,
-    level: null, money: 0, speed: 0, treadLvl: 1, slotsUnlocked: START_SLOTS,
+    topics: [], money: 0, speed: 0, treadLvl: 1, slotsUnlocked: START_SLOTS,
     slots: Array(MAX_SLOTS).fill(null), discovered: {}, streak: 0, trails: [], trail: -1, character: 'classic',
     stats: { correct: 0, wrong: 0, best: 0 },
   });
@@ -302,7 +307,7 @@
   let hasSave = false;
   try {
     const raw = localStorage.getItem(SAVE_KEY);
-    if (raw) { S = loadSave(JSON.parse(raw)); hasSave = S.level !== null; }
+    if (raw) { S = loadSave(JSON.parse(raw)); hasSave = S.topics.length > 0; }
   } catch (e) { /* storage unavailable or corrupt save */ }
   // Rebuild the save field by field with type and range checks, so a corrupted or hand-edited
   // save can't inject markup into the UI, pollute prototypes or crash the game.
@@ -311,7 +316,12 @@
     if (!d || typeof d !== 'object') return out;
     const num = (v, lo, hi, def) => (typeof v === 'number' && isFinite(v) ? Math.min(hi, Math.max(lo, v)) : def);
     const int = (v, lo, hi, def) => Math.round(num(v, lo, hi, def));
-    out.level = Number.isInteger(d.level) && d.level >= 0 && d.level < MathGen.LEVELS.length ? d.level : null;
+    if (Array.isArray(d.topics)) out.topics = [...new Set(d.topics.filter((id) => typeof id === 'string' && MathGen.TOPICS[id]))];
+    else if (Number.isInteger(d.level) && d.level >= 0 && d.level <= 3) {
+      // saves from before topics: map the old level (Seedling..Mastermind) to the closest grades
+      const grades = [['g3'], ['g3', 'g4'], ['g5', 'g6'], ['g6', 'all']][d.level];
+      out.topics = MathGen.GRADES.filter((G) => grades.includes(G.id)).flatMap((G) => G.topics.map((t) => t.id));
+    }
     out.money = num(d.money, 0, 1e300, 0);
     out.speed = num(d.speed, 0, 1e300, 0);
     out.treadLvl = int(d.treadLvl, 1, 100, 1);
@@ -1324,29 +1334,59 @@
   const guardPortrait = (z) => Models.portrait(ZONES[z].guard.spec, `g${z}`);
 
   // ---------------- Menu ----------------
+  // Topic picker: one collapsible group per grade, each with its sub-topics as checkboxes.
+  let pickSel = new Set();
   function buildMenu() {
-    const box = $('levels'); box.innerHTML = '';
-    MathGen.LEVELS.forEach((L, i) => {
-      const b = document.createElement('button');
-      b.className = 'level' + (hasSave && S.level === i ? ' current' : '');
-      const ex = MathGen.gen(i, 6).text;
-      b.innerHTML = `<span class="em">${L.emoji}</span><b>${L.name}</b><small>${L.ages}</small><small>${L.desc}</small><div class="ex">${ex}</div>`;
-      b.onclick = () => startGame(i);
-      box.appendChild(b);
+    pickSel = new Set(S.topics);
+    const box = $('topics'); box.innerHTML = '';
+    MathGen.GRADES.forEach((G) => {
+      const wrap = document.createElement('div'); wrap.className = 'grade';
+      const head = document.createElement('div'); head.className = 'ghead';
+      const all = document.createElement('input'); all.type = 'checkbox'; all.setAttribute('aria-label', `Select all of ${G.name}`);
+      const tog = document.createElement('button'); tog.type = 'button'; tog.className = 'gtoggle'; tog.setAttribute('aria-expanded', 'false');
+      tog.innerHTML = `<span class="em">${G.emoji}</span><span class="gname"><b></b><small></small></span><span class="cnt"></span><span class="chev">▾</span>`;
+      tog.querySelector('b').textContent = G.name; tog.querySelector('small').textContent = G.desc;
+      const list = document.createElement('div'); list.className = 'tlist'; list.hidden = true;
+      const boxes = G.topics.map((t) => {
+        const lab = document.createElement('label'); lab.className = 'topic';
+        const cb = document.createElement('input'); cb.type = 'checkbox'; cb.checked = pickSel.has(t.id);
+        cb.onchange = () => { cb.checked ? pickSel.add(t.id) : pickSel.delete(t.id); sync(); };
+        lab.append(cb, document.createTextNode(t.name)); list.appendChild(lab);
+        return cb;
+      });
+      const sync = () => {
+        const n = G.topics.filter((t) => pickSel.has(t.id)).length;
+        all.checked = n === G.topics.length; all.indeterminate = n > 0 && n < G.topics.length;
+        tog.querySelector('.cnt').textContent = `${n} / ${G.topics.length}`;
+        wrap.classList.toggle('some', n > 0);
+        updatePlay();
+      };
+      all.onchange = () => { G.topics.forEach((t, i) => { boxes[i].checked = all.checked; all.checked ? pickSel.add(t.id) : pickSel.delete(t.id); }); sync(); };
+      tog.onclick = () => { list.hidden = !list.hidden; wrap.classList.toggle('open', !list.hidden); tog.setAttribute('aria-expanded', String(!list.hidden)); };
+      head.append(all, tog); wrap.append(head, list); box.appendChild(wrap);
+      sync();
     });
+    updatePlay();
     const r = $('bReset');
     r.hidden = !hasSave; r.textContent = 'Reset all progress'; r.dataset.armed = '';
     const strip = $('menuBeasts');
     if (!strip.childElementCount) ZONES.forEach((Z, z) => { const im = new Image(); im.src = guardPortrait(z); im.title = Z.guard.n; strip.appendChild(im); });
   }
+  function updatePlay() {
+    const n = pickSel.size, b = $('bPlay');
+    b.disabled = n === 0;
+    b.textContent = n === 0 ? 'Pick at least one topic' : `▶ ${hasSave ? 'KEEP PLAYING' : 'PLAY'} · ${n} topic${n === 1 ? '' : 's'}`;
+  }
+  $('bPlay').onclick = () => { if (pickSel.size) startGame([...pickSel]); };
   $('bReset').onclick = (e) => {
     const r = e.currentTarget;
     if (!r.dataset.armed) { r.dataset.armed = '1'; r.textContent = 'Are you sure? Click again to erase everything'; return; }
     S = fresh(); hasSave = false; save(); player.carrying = null; setCharacter(S.character); buildMenu();
   };
-  function startGame(level) {
-    if (hasSave && S.level !== level) toast(`Math level changed to ${MathGen.LEVELS[level].name}`, 'gold');
-    S.level = level; hasSave = true; started = true; feltSpeed = runSpeed();
+  function startGame(topics) {
+    const changed = hasSave && (topics.length !== S.topics.length || topics.some((t) => !S.topics.includes(t)));
+    if (changed) toast(`Math topics updated: ${topics.length} selected`, 'gold');
+    S.topics = topics; hasSave = true; started = true; feltSpeed = runSpeed();
     pedestals.forEach((p) => (p.q = null));
     $('menu').hidden = true; $('hud').hidden = false; paused = false;
     save();
@@ -1460,18 +1500,22 @@
 
   // ---------------- Quiz ----------------
   function openQuiz(ped) {
-    if (!ped.q) ped.q = MathGen.gen(S.level, difficulty(ped.zone, ped.egg.rarity));
+    if (!ped.q) ped.q = MathGen.gen(S.topics, difficulty(ped.zone, ped.egg.rarity));
     activePed = ped; currentQ = ped.q; usedHint = false; quizId++; paused = true; keys.clear();
     const Z = ZONES[ped.zone], R = RARITIES[ped.egg.rarity];
     $('qMonster').src = guardPortrait(ped.zone);
     $('qTitle').textContent = ped.isDrop ? `Solve it to grab ${Z.guard.n}'s egg back!` : `${Z.guard.n} blocks your way!`;
     $('qEgg').innerHTML = `Guarding a <b style="color:${R.color}">${R.name}</b> egg · Difficulty <span class="stars">${stars(currentQ.difficulty)}</span>`;
-    const qt = $('qText'); qt.textContent = currentQ.text; qt.classList.toggle('long', currentQ.text.length > 40);
+    $('qTopic').textContent = `${currentQ.grade} · ${currentQ.topic}`;
+    const qt = $('qText'); qt.textContent = currentQ.text; qt.classList.toggle('long', currentQ.text.length > 28);
+    $('qVisual').innerHTML = currentQ.svg || ''; // pictures are built by math.js, never from player input
+    $('qVisual').hidden = !currentQ.svg;
     $('qAnswerArea').hidden = false; $('qResult').hidden = true; $('qHintText').hidden = true;
     const choices = !!currentQ.choices;
-    $('qChoices').hidden = !choices; $('qForm').hidden = choices; $('qPad').hidden = choices || !isTouch; $('qHint').hidden = choices;
+    $('qChoices').hidden = !choices; $('qForm').hidden = choices; $('qPad').hidden = choices || !isTouch;
     if (choices) {
-      const box = $('qChoices'); box.innerHTML = '';
+      const box = $('qChoices'), longest = Math.max(...currentQ.choices.map((c) => String(c).length)); box.innerHTML = '';
+      box.classList.toggle('words', longest > 6); box.classList.toggle('stack', longest > 16);
       currentQ.choices.forEach((c) => {
         const b = document.createElement('button'); b.textContent = c; b.onclick = () => answer(c, String(c)); box.appendChild(b);
       });
@@ -1484,14 +1528,14 @@
     sfx.roar();
   }
 
-  ['7', '8', '9', '/', '⌫', '4', '5', '6', '−', '.', '1', '2', '3', '0', '✔'].forEach((k) => {
+  ['7', '8', '9', '⌫', '4', '5', '6', '/', '1', '2', '3', '.', '0', '␣', '−', '✔'].forEach((k) => {
     const b = document.createElement('button'); b.type = 'button'; b.textContent = k;
     if (k === '✔') b.className = 'ok';
     b.onclick = () => {
       const inp = $('qInput');
       if (k === '⌫') inp.value = inp.value.slice(0, -1);
       else if (k === '✔') $('qForm').requestSubmit();
-      else inp.value += k;
+      else inp.value += k === '␣' ? ' ' : k; // the space key is for mixed numbers like 2 1/3
     };
     $('qPad').appendChild(b);
   });
@@ -1504,10 +1548,7 @@
   });
   $('qHint').onclick = () => {
     usedHint = true;
-    const ex = currentQ.explain, ans = currentQ.display, i = ex.lastIndexOf(ans);
-    const raw = String(currentQ.answer), j = ex.lastIndexOf(raw);
-    const k = i >= 0 ? i : j, len = i >= 0 ? ans.length : raw.length;
-    $('qHintText').textContent = '💡 ' + (k >= 0 ? ex.slice(0, k) + '❓' + ex.slice(k + len) : ex) + '  (hint halves the cash reward)';
+    $('qHintText').textContent = '💡 ' + MathGen.hint(currentQ) + '  (hint halves the cash reward)';
     $('qHintText').hidden = false;
   };
   $('qLeave').onclick = () => closeQuiz();
@@ -1525,7 +1566,7 @@
       const coins = Math.round(income(z, r) * 8 * (1 + Math.min(S.streak, 10) * 0.1) * (usedHint ? 0.5 : 1));
       const spd = Math.max(1, Math.round(ZONES[Math.min(z + 1, ZONES.length - 1)].req * 0.03));
       S.money += coins; S.speed += spd;
-      res.innerHTML = `<div class="big">✅ CORRECT!</div><div>${q.display} is right!${S.streak > 1 ? ` 🔥 ${S.streak} in a row!` : ''}</div>
+      res.innerHTML = `<div class="big">✅ CORRECT!</div><div>${escapeHtml(q.display)} is right!${S.streak > 1 ? ` 🔥 ${S.streak} in a row!` : ''}</div>
         <div class="explain">+$${fmt(coins)} cash · +${fmt(spd)} speed</div><button class="primary" id="qGo">🥚 GRAB THE EGG AND RUN!</button>`;
       sfx.right(); sfx.cash();
       const go = () => { if ($('quiz').hidden || id !== quizId) return; quizId++; closeQuiz(); if (ped.isDrop) pickUpDropped(ped); else grabEgg(ped); };
@@ -1533,7 +1574,7 @@
       setTimeout(go, 1800);
     } else {
       S.streak = 0; S.stats.wrong++;
-      res.innerHTML = `<div class="big">❌ WRONG!</div><div>You said <b>${escapeHtml(String(typed))}</b>. The answer is <b>${q.display}</b>.</div>
+      res.innerHTML = `<div class="big">❌ WRONG!</div><div>You said <b>${escapeHtml(String(typed))}</b>. The answer is <b>${escapeHtml(q.display)}</b>.</div>
         <div class="explain">📘 ${escapeHtml(q.explain)}</div><button class="primary danger" id="qGo">😵 Brace for the SMACK…</button>`;
       sfx.wrong();
       ped.q = null;

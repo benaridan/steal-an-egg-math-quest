@@ -41,8 +41,10 @@
     <div id="menuBeasts" class="beasts"></div>
     <p class="sub">Sneak into the lairs of mythical beasts and steal their eggs. Every guardian asks a math question first.
       Answer right and the egg is yours. Answer wrong and <b>SMACK!</b> you're sent flying back to base.</p>
-    <h2>CHOOSE YOUR MATH LEVEL</h2>
-    <div id="levels" class="levels"></div>
+    <h2>CHOOSE YOUR MATH TOPICS</h2>
+    <p class="sub">Open a grade and tick the topics you want to practise, or tick the grade to take all of it. Deeper biomes and rarer eggs ask harder questions from your list.</p>
+    <div id="topics" class="topics"></div>
+    <button id="bPlay" class="primary play" disabled>Pick at least one topic</button>
     <div class="how">
       <b>How to play:</b> Move with <kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd>, turn the camera with <kbd>←</kbd><kbd>→</kbd> or by dragging, <kbd>Space</kbd> to jump, scroll to zoom (on touch: thumbstick on the left, drag to look, JUMP button on the right). Walk up to an egg and press <kbd>E</kbd> (or tap it).
       Bring stolen eggs back to your base to hatch creatures that earn cash. Stand on the treadmill to build speed and unlock deeper zones, and buy a trail at the glowing TRAILS SHOP circle to run faster.
@@ -61,9 +63,11 @@
       <div>
         <div id="qTitle" class="qtitle"></div>
         <div id="qEgg" class="qegg"></div>
+        <div id="qTopic" class="qtopic"></div>
       </div>
     </div>
     <div id="qText" class="qtext"></div>
+    <div id="qVisual" class="qvisual" hidden></div>
     <div id="qAnswerArea">
       <div id="qChoices" class="choices"></div>
       <form id="qForm" autocomplete="off">
