@@ -15,6 +15,8 @@
   const CHARACTERS = [
     { id: 'classic', n: 'Classic', desc: 'The blocky original.', spec: { type: 'noob' } },
     { id: 'kai', n: 'Kai', desc: 'Never goes anywhere without a pet stag beetle.', model: 'kai', spec: { type: 'biped', model: 'kai', body: 0x5a3020, skin: 0xc07a50, legs: 0x6a6a6a, eye: 0x111111 } },
+    { id: 'shiny', n: 'Shiny', desc: 'Glowing cracks, and a real skeleton: swings its arms and legs as it runs.', model: 'shinyrig', spec: { type: 'biped', bulky: true, model: 'shinyrig', body: 0xd8401a, skin: 0x3a6a66, cracks: 0xffd23f, eye: 0xffee00 } },
+    { id: 'cheese', n: 'Cheese', desc: "Cheese never leaves a dog's side.", model: 'cheeserig', spec: { type: 'biped', model: 'cheeserig', body: 0xf6d000, belly: 0x6a7aff, eye: 0x222222 } },
   ];
 
   const RARITIES = [
@@ -1174,16 +1176,40 @@
     scene.add(g);
     return { g, body, legs, arms, alt: null };
   })();
-  // Imported characters have no skeleton, so they hop, lean and waddle instead of swinging limbs.
+  // Imported characters with a skeleton (avatar.rig) swing their limbs; the rest hop, lean and waddle.
   function setCharacter(id) {
     const C = CHARACTERS.find((c) => c.id === id) || CHARACTERS[0];
-    if (avatar.alt) { avatar.g.remove(avatar.alt); avatar.alt = null; }
+    if (avatar.alt) { avatar.g.remove(avatar.alt); avatar.alt = null; avatar.rig = null; }
     avatar.body.visible = !C.model;
     if (!C.model) return;
     const m = Models.build(C.spec);
     m.scale.setScalar(5.4 / m.userData.height); // about as tall as the classic avatar
     const pivot = new THREE.Group(); pivot.add(m); avatar.g.add(pivot);
     avatar.alt = pivot;
+    avatar.rig = m.userData.body.userData.rig || null;
+  }
+  // Pose a skeleton: sw = stride swing (-1..1), c = its pace (cos of the stride), mv = walking.
+  function poseRig(r, t, { sw, c, mv, carrying, air, flying }) {
+    const breathe = Math.sin(t * 2) * 0.03, knee = 0.9;
+    r.set('Hips', 0, mv ? sw * 0.12 : 0, 0);
+    r.set('Spine', mv ? 0.06 : breathe, mv ? -sw * 0.1 : 0, 0);
+    r.set('Spine2', mv ? 0.04 : breathe, mv ? -sw * 0.08 : 0, 0);
+    r.set('Head', mv ? -0.05 : Math.sin(t * 0.7) * 0.05, mv ? sw * 0.08 : Math.sin(t * 0.45) * 0.15, 0);
+    // legs: negative x swings the foot forward; knees bend while the leg travels forward
+    let lL = -sw, lR = sw, kL = mv ? Math.max(0, c) * knee : 0, kR = mv ? Math.max(0, -c) * knee : 0;
+    if (air) { lL = -0.6; lR = 0.25; kL = 0.9; kR = 0.5; }
+    if (flying) { lL = lR = 0.15; kL = kR = 0.25; }
+    r.set('LeftUpLeg', lL, 0, 0); r.set('RightUpLeg', lR, 0, 0);
+    r.set('LeftLeg', kL, 0, 0); r.set('RightLeg', kR, 0, 0);
+    r.set('LeftFoot', -kL * 0.4, 0, 0); r.set('RightFoot', -kR * 0.4, 0, 0);
+    // arms swing against the legs; up overhead to carry an egg, wide when flying
+    let aL = sw * 0.9, aR = -sw * 0.9, zL = 0.08 + breathe, zR = -0.08 - breathe, eL = -0.25, eR = -0.25;
+    if (mv) { eL = eR = -0.45; }
+    if (air) { aL = aR = -2.5; zL = 0.3; zR = -0.3; eL = eR = 0; }
+    if (carrying) { aL = aR = -2.9; zL = 0.25; zR = -0.25; eL = eR = -0.3; }
+    if (flying) { aL = aR = 0; zL = 1.3; zR = -1.3; eL = eR = 0; }
+    r.set('LeftArm', aL, 0, zL - r.armDrop); r.set('RightArm', aR, 0, zR + r.armDrop);
+    r.set('LeftForeArm', eL, 0, 0); r.set('RightForeArm', eR, 0, 0);
   }
   let carryEgg = null;
 
@@ -2179,7 +2205,13 @@ ${isTouch ? 'tap it' : 'press E'}: solve to grab`, { size: 44, h: 0.8, color: RA
     const airPose = player.z > 0 && !player.carrying;
     if (airPose) { avatar.arms[0].rotation.x = avatar.arms[1].rotation.x = -2.6; avatar.legs[0].rotation.x = 0.35; avatar.legs[1].rotation.x = -0.2; }
     avatar.arms[0].rotation.z = flying ? -1.2 : airPose ? -0.25 : 0; avatar.arms[1].rotation.z = flying ? 1.2 : airPose ? 0.25 : 0;
-    if (avatar.alt) {
+    if (avatar.rig) {
+      const a = avatar.alt, rsw = mv ? Math.sin(stride) * Math.min(0.9, 0.55 + runK * 0.1) : 0;
+      poseRig(avatar.rig, t, { sw: rsw, c: Math.cos(stride), mv, carrying: !!player.carrying, air: airPose, flying: !!flying });
+      a.position.y = mv ? Math.abs(Math.cos(stride)) * 0.18 : 0; // body rises as each leg passes under it
+      a.rotation.x = flying ? flying.spin : mv ? 0.06 + Math.min(0.1, runK * 0.02) : 0;
+      a.rotation.z = 0; a.scale.set(1, 1, 1);
+    } else if (avatar.alt) {
       const a = avatar.alt, hop = mv ? Math.abs(Math.sin(stride)) : 0;
       a.position.y = hop * 0.45;
       a.rotation.x = flying ? flying.spin : mv ? 0.12 + Math.min(0.15, runK * 0.03) : airPose ? -0.15 : 0;

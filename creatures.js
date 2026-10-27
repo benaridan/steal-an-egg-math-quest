@@ -491,9 +491,45 @@ const Models = (() => {
       } catch (e) { console.warn('model', key, e); res(); }
     })));
   })();
+  // A plain clone() leaves skinned meshes bound to the original's bones, so rebind them to the copies.
+  function cloneModel(src) {
+    const out = src.clone(true), map = new Map();
+    (function pair(a, b) { map.set(a, b); a.children.forEach((c, i) => pair(c, b.children[i])); })(src, out);
+    src.traverse((m) => {
+      if (!m.isSkinnedMesh) return;
+      const c = map.get(m), sk = m.skeleton;
+      c.bind(new T.Skeleton(sk.bones.map((b) => map.get(b)), sk.boneInverses), m.bindMatrix);
+      c.frustumCulled = false; // bounds don't follow the bones
+    });
+    return out;
+  }
+  // Bones of a rigged model, posed with rotations given in the model's own space
+  // (x = pitch forward/back, z = raise sideways), so it doesn't matter how each bone's axes point.
+  function makeRig(obj, o) {
+    obj.updateMatrixWorld(true);
+    const bones = {}, q = new T.Quaternion(), e = new T.Euler();
+    obj.traverse((b) => {
+      if (!b.isBone) return;
+      const P = b.parent.getWorldQuaternion(new T.Quaternion());
+      bones[b.name.replace(/^mixamorig:?/, '')] = { b, rest: b.quaternion.clone(), P, Pi: P.clone().invert() };
+    });
+    if (!Object.keys(bones).length) return null;
+    return {
+      armDrop: o.armDrop ?? 0, // how far to lower T-posed arms before posing them
+      has: (n) => !!bones[n],
+      // set a bone to its rest pose turned by (x, y, z) radians about the model's axes
+      set(n, x = 0, y = 0, z = 0) {
+        const r = bones[n];
+        if (!r) return;
+        q.setFromEuler(e.set(x, y, z));
+        r.b.quaternion.copy(r.Pi).multiply(q).multiply(r.P).multiply(r.rest);
+      },
+    };
+  }
   const modelMats = new Map();
   function imported(s, root) {
-    const { scene, o } = glb[s.model], obj = scene.clone(true), H = o.height ?? 8;
+    const { scene, o } = glb[s.model], obj = cloneModel(scene), H = o.height ?? 8;
+    root.userData.rig = makeRig(obj, o);
     obj.rotation.y = o.rotY ?? 0;
     // feet on the ground, centred, H units tall
     const box = new T.Box3().setFromObject(obj), k = H / (box.max.y - box.min.y);
